@@ -201,6 +201,74 @@ function customerPersonOutreachChecklistState(customerId) {
   return state;
 }
 
+function crmChecklistProgress(items, state) {
+  const total = items.length;
+  const done = items.filter(([key]) => {
+    const row = state.get(key);
+    return row && Number(row.checked) === 1;
+  }).length;
+  return { done, total };
+}
+
+function crmCompanyChecklistProgress(state) {
+  return crmChecklistProgress(CUSTOMER_OUTREACH_CHECKLIST.flatMap(group => group.items), state);
+}
+
+function crmPeopleChecklistProgress(people, state) {
+  const total = people.length * CUSTOMER_PERSON_OUTREACH_CHECKLIST.length;
+  let done = 0;
+  for (const person of people) {
+    const personState = state.get(Number(person.id)) || new Map();
+    done += crmChecklistProgress(CUSTOMER_PERSON_OUTREACH_CHECKLIST, personState).done;
+  }
+  return { done, total };
+}
+
+function crmOutreachWorkflowStatus(customer, companyProgress, peopleProgress) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (customer.next_follow_up_at && customer.next_follow_up_at <= today) return "Follow-up due";
+  if (peopleProgress.total && peopleProgress.done === peopleProgress.total && companyProgress.done === companyProgress.total) return "Outreach tracked";
+  if (companyProgress.done >= 4 && peopleProgress.done > 0) return "Ready to follow up";
+  if (companyProgress.done || peopleProgress.done) return "Research in progress";
+  return "Not started";
+}
+
+function renderOutreachProgressSummary(customer, companyProgress, peopleProgress, people) {
+  const status = crmOutreachWorkflowStatus(customer, companyProgress, peopleProgress);
+  return `
+    <section class="crm-detail-sidecard crm-outreach-summary">
+      <div class="crm-detail-actions" style="justify-content:space-between">
+        <h2>Outreach Progress</h2>
+        <span class="crm-v1-chip">${esc(status)}</span>
+      </div>
+      <div class="crm-outreach-progress-grid">
+        <div>
+          <span>Company checklist</span>
+          <strong>${esc(companyProgress.done)}/${esc(companyProgress.total)} complete</strong>
+        </div>
+        <div>
+          <span>People outreach</span>
+          <strong>${esc(peopleProgress.done)}/${esc(peopleProgress.total)} complete</strong>
+        </div>
+        <div>
+          <span>Next follow-up</span>
+          <strong>${esc(customer.next_follow_up_at || "—")}</strong>
+        </div>
+      </div>
+      <div class="crm-summary-people">
+        <div class="crm-detail-actions" style="justify-content:space-between">
+          <div>
+            <span>People linked</span>
+            <strong>${esc(people.length)}</strong>
+          </div>
+          <a class="btn" href="/employees/new?customer_id=${esc(customer.id)}&returnTo=${encodeURIComponent(`/customers/${customer.id}`)}">Add person</a>
+        </div>
+        ${people.length ? `<div class="crm-summary-people-list">${people.slice(0, 4).map(p => `<span>${esc(p.full_name)}</span>`).join("")}</div>` : `<div class="muted" style="margin-top:8px">Add people before tracking person outreach.</div>`}
+      </div>
+    </section>
+  `;
+}
+
 function renderCustomerOutreachChecklist(customerId, state) {
   return `
     <section class="crm-detail-sidecard">
@@ -243,10 +311,27 @@ function renderPeopleOutreachChecklist(customerId, people, state) {
         : `<div class="crm-people-outreach-list">
             ${people.map(person => {
               const personState = state.get(Number(person.id)) || new Map();
+              const progress = crmChecklistProgress(CUSTOMER_PERSON_OUTREACH_CHECKLIST, personState);
+              const isChecked = (key) => {
+                const row = personState.get(key);
+                return row && Number(row.checked) === 1;
+              };
+              const chips = [
+                (isChecked("linkedin_profile_captured") || isChecked("linkedin_connection_sent") || isChecked("linkedin_message_sent")) ? "LinkedIn" : "",
+                isChecked("person_emailed") ? "Email" : "",
+                isChecked("person_called") ? "Called" : "",
+                isChecked("follow_up_scheduled") ? "Follow-up" : "",
+              ].filter(Boolean);
               return `<details class="crm-person-outreach">
                 <summary>
-                  <span>${esc(person.full_name)}</span>
-                  <em>${esc(person.role || "Person")}</em>
+                  <span>
+                    <strong>${esc(person.full_name)}</strong>
+                    <small>${esc(person.role || "Person")}</small>
+                  </span>
+                  <span class="crm-person-outreach-meta">
+                    ${chips.map(chip => `<b>${esc(chip)}</b>`).join("")}
+                    <em>${esc(progress.done)}/${esc(progress.total)} done</em>
+                  </span>
                 </summary>
                 <form method="post" action="/customers/${esc(customerId)}/people/${esc(person.id)}/outreach-checklist">
                   <div class="crm-checklist-items">
@@ -321,10 +406,10 @@ function renderPeopleShell(title, subtitle, inner, actions = "") {
     .crm-v1-header,.crm-v1-surface{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
     .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.crm-v1-hero{max-width:780px}.crm-v1-eyebrow{display:inline-flex;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}.crm-v1-head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .crm-v1-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}.crm-v1-stat{background:rgba(255,255,255,.04);color:#f4f7fb;border-radius:18px;padding:14px;border:1px solid rgba(255,255,255,.09)}.crm-v1-stat-k{font-size:32px;line-height:1;font-weight:900;letter-spacing:-.05em;color:#f4f7fb}.crm-v1-stat-l{margin-top:8px;font-size:13px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em}
-    .crm-v1-filterbar{display:grid;grid-template-columns:1fr auto;gap:12px;margin-top:16px;align-items:end}.crm-v1-filterbar label,.people-form label{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px}.crm-v1-filterbar input,.people-form input,.people-form textarea,.people-form select{background:#07111f!important;color:#f4f7fb!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:12px!important;padding:12px!important;width:100%}
+    .crm-v1-filterbar{display:grid;grid-template-columns:1fr auto;gap:12px;margin-top:16px;align-items:end}.crm-v1-filterbar label,.people-form label{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px}.crm-v1-filterbar input,.crm-v1-filterbar select,.people-form input,.people-form textarea,.people-form select{background:#07111f!important;color:#f4f7fb!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:12px!important;padding:12px!important;width:100%}.people-search-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}.people-search-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center}
     .crm-v1-list{display:grid;gap:12px;margin-top:16px}.crm-v1-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(120px,.7fr) minmax(120px,.7fr) minmax(120px,.7fr) 120px auto;gap:12px;align-items:center;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);color:#d8e2f1}.crm-v1-name{font-size:18px;font-weight:800;line-height:1.1;color:#f4f7fb}.crm-v1-meta{margin-top:5px;color:#9aa8bd;font-size:13px}.crm-v1-badge,.crm-v1-chip{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#d8e2f1;font-size:12px;font-weight:800}.crm-v1-row a,.crm-v1-surface a{color:#7cc4ff;font-weight:700}.crm-v1-empty{padding:28px 18px;border-radius:14px;border:1px dashed rgba(216,173,76,.35);color:#9aa8bd;background:rgba(216,173,76,.06);text-align:center}
     .people-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}.people-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.people-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.people-label{color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.people-value{margin-top:6px;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.people-note{white-space:pre-wrap;line-height:1.55;color:#d8e2f1}.people-form{max-width:920px}.people-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.people-form .wide{grid-column:1/-1}
-    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-v1-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.people-grid{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-stats,.crm-v1-row,.crm-v1-filterbar,.people-form-grid{grid-template-columns:1fr}}
+    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-v1-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.people-grid{grid-template-columns:1fr}.people-search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-stats,.crm-v1-row,.crm-v1-filterbar,.people-form-grid,.people-search-grid{grid-template-columns:1fr}.people-search-actions{justify-content:flex-start}}
   </style>
   <div class="crm-v1-shell">
     ${hubSidebar("crm-people")}
@@ -369,6 +454,10 @@ function crmSafeReturnPath(value, fallback = "/customers") {
 
 function crmSinglePartValue(value) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function crmDistinctValues(sql, params = {}) {
+  return db.prepare(sql).all(params).map(r => String(r.value || "").trim()).filter(Boolean);
 }
 
 function crmNormLower(s) {
@@ -2135,12 +2224,12 @@ fastify.get("/customers/:id", async (req, reply) => {
     .all(id);
 
   const linkedEmployees = customerEmployeeLinks(id);
-  const allEmployees = allEmployeesForPicklist();
   const outreachChecklistState = customerOutreachChecklistState(id);
   const personOutreachChecklistState = customerPersonOutreachChecklistState(id);
+  const companyChecklistProgress = crmCompanyChecklistProgress(outreachChecklistState);
+  const peopleChecklistProgress = crmPeopleChecklistProgress(linkedEmployees, personOutreachChecklistState);
   const isTarget = isTargetCustomer(c);
   const backHref = crmSafeReturnPath(req.query && req.query.returnTo, "/customers");
-  const personReturnHref = `/customers/${c.id}?returnTo=${encodeURIComponent(backHref)}`;
   const detailNavActive = backHref.startsWith("/targets") ? "crm-targets" : "crm-customers";
   const targetPanel = isTarget ? `
         <div class="crm-detail-kv-item crm-detail-wide">
@@ -2176,10 +2265,12 @@ fastify.get("/customers/:id", async (req, reply) => {
     .crm-v1-header,.crm-v1-surface,.crm-detail-sidecard{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
     .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.crm-v1-hero{max-width:780px}.crm-v1-eyebrow{display:inline-flex;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}
     .crm-v1-head-actions,.crm-detail-actions,.crm-detail-chiprow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.crm-detail-status{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}.crm-detail-status div{text-align:right}.crm-detail-status span,.crm-detail-label,.crm-detail-kv-grid span{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-status strong,.crm-detail-kv-grid strong{display:block;color:#f4f7fb;margin-top:4px}
-    .crm-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}.crm-detail-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.crm-detail-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.crm-detail-wide{grid-column:1/-1}.crm-detail-value{margin-top:6px;color:#d8e2f1;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.crm-detail-value a,.crm-detail-sidecard a{color:#7cc4ff}.crm-detail-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.crm-detail-note{margin-top:6px;white-space:pre-wrap;line-height:1.55;color:#d8e2f1;overflow-wrap:anywhere}
+    .crm-detail-grid,.crm-overview-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}.crm-detail-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.crm-detail-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.crm-detail-wide{grid-column:1/-1}.crm-detail-value{margin-top:6px;color:#d8e2f1;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.crm-detail-value a,.crm-detail-sidecard a{color:#7cc4ff}.crm-detail-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.crm-detail-note{margin-top:6px;white-space:pre-wrap;line-height:1.55;color:#d8e2f1;overflow-wrap:anywhere}
     .crm-v1-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:#d8e2f1;font-size:12px;font-weight:800}.crm-detail-side{display:grid;gap:12px}.crm-detail-sidecard h2{margin:0 0 10px;color:#f4f7fb;font-size:18px}.crm-detail-sidecard label{color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-sidecard input,.crm-detail-sidecard textarea,.crm-detail-sidecard select{background:#07111f;color:#f4f7fb;border:1px solid rgba(255,255,255,.09);border-radius:12px}.crm-detail-sidecard table{width:100%;border-collapse:collapse}.crm-detail-sidecard th,.crm-detail-sidecard td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}.crm-detail-sidecard th{color:#98a7bb;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.crm-detail-email{border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:12px}.crm-detail-pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;margin:10px 0 0;border:1px solid rgba(255,255,255,.08);background:#07111f;padding:10px;border-radius:10px;color:#d8e2f1}
-    .crm-checklist-section{padding-top:12px;margin-top:12px;border-top:1px solid rgba(255,255,255,.08)}.crm-checklist-section:first-child{border-top:0;margin-top:0;padding-top:0}.crm-checklist-items{display:grid;gap:8px;margin-top:8px}.crm-detail-sidecard .crm-checklist-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1;font-size:13px;font-weight:800;text-transform:none;letter-spacing:0}.crm-checklist-row input{width:18px!important;height:18px!important;padding:0!important;margin:0;accent-color:#d8ad4c}.crm-checklist-row span{color:#f4f7fb}.crm-checklist-row em{font-style:normal;color:#98a7bb;font-size:11px;font-weight:800}.crm-people-outreach-list{display:grid;gap:10px}.crm-person-outreach{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:10px 12px}.crm-person-outreach summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;color:#f4f7fb;font-weight:900}.crm-person-outreach summary em{font-style:normal;color:#98a7bb;font-size:12px;font-weight:800}.crm-person-outreach form{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
-    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-detail-grid{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-header-top{display:grid}.crm-detail-status{justify-content:flex-start}.crm-detail-status div{text-align:left}}
+    .crm-outreach-summary{background:radial-gradient(circle at top right,rgba(216,173,76,.16),transparent 34%),linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.032))}.crm-outreach-progress-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}.crm-outreach-progress-grid div,.crm-summary-people{padding:10px 12px;border-radius:12px;background:rgba(7,17,31,.50);border:1px solid rgba(255,255,255,.08)}.crm-outreach-progress-grid span,.crm-summary-people span{display:block;color:#98a7bb;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.crm-outreach-progress-grid strong,.crm-summary-people strong{display:block;margin-top:5px;color:#f4f7fb;font-size:14px}.crm-summary-people{margin-top:10px}.crm-summary-people-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.crm-summary-people-list span{display:inline-flex;text-transform:none;letter-spacing:0;color:#d8e2f1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:5px 8px}
+    .crm-workspace{display:grid;gap:14px}.crm-workspace-head{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap;padding:4px 2px}.crm-workspace-head h2{margin:0;color:#f4f7fb;font-size:24px;letter-spacing:-.03em}.crm-workspace-head p{margin:4px 0 0;color:#98a7bb}.crm-workspace-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}.crm-workspace-wide{grid-column:1/-1}.crm-workspace .crm-detail-sidecard{min-width:0}.crm-workspace .crm-checklist-section{border-top:0;margin-top:0;padding-top:0}.crm-workspace .crm-detail-sidecard form > .crm-checklist-section + .crm-checklist-section{border-top:1px solid rgba(255,255,255,.08);margin-top:12px;padding-top:12px}.crm-workspace .crm-checklist-items{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .crm-checklist-section{padding-top:10px;margin-top:10px;border-top:1px solid rgba(255,255,255,.08)}.crm-checklist-section:first-child{border-top:0;margin-top:0;padding-top:0}.crm-checklist-items{display:grid;gap:8px;margin-top:8px}.crm-detail-sidecard .crm-checklist-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.075);color:#d8e2f1;font-size:12px;font-weight:800;text-transform:none;letter-spacing:0}.crm-checklist-row input{width:16px!important;height:16px!important;padding:0!important;margin:0;accent-color:#d8ad4c}.crm-checklist-row span{color:#f4f7fb}.crm-checklist-row em{font-style:normal;color:#98a7bb;font-size:10px;font-weight:800}.crm-people-outreach-list{display:grid;gap:10px}.crm-person-outreach{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.03);padding:10px 12px}.crm-person-outreach summary{cursor:pointer;display:flex;justify-content:space-between;gap:14px;align-items:center;color:#f4f7fb;font-weight:900;list-style:none}.crm-person-outreach summary::-webkit-details-marker{display:none}.crm-person-outreach summary strong{display:block;font-size:15px}.crm-person-outreach summary small{display:block;margin-top:2px;color:#98a7bb;font-size:12px;font-weight:800}.crm-person-outreach-meta{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.crm-person-outreach-meta b{font-size:10px;color:#fff7d6;border:1px solid rgba(216,173,76,.35);background:rgba(216,173,76,.12);border-radius:999px;padding:4px 7px}.crm-person-outreach summary em{font-style:normal;color:#98a7bb;font-size:12px;font-weight:900}.crm-person-outreach form{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}.crm-person-outreach form .crm-checklist-items{grid-template-columns:repeat(3,minmax(0,1fr))}
+    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-detail-grid,.crm-overview-grid,.crm-workspace-grid{grid-template-columns:1fr}.crm-workspace .crm-checklist-items,.crm-person-outreach form .crm-checklist-items{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-header-top{display:grid}.crm-detail-status{justify-content:flex-start}.crm-detail-status div{text-align:left}.crm-person-outreach summary{display:grid}.crm-person-outreach-meta{justify-content:flex-start}}
   </style>
   <div class="crm-v1-shell">
     ${hubSidebar(detailNavActive)}
@@ -2211,7 +2302,7 @@ fastify.get("/customers/:id", async (req, reply) => {
         </div>
       </section>
 
-      <div class="crm-detail-grid">
+      <div class="crm-overview-grid">
         <section class="crm-v1-surface">
           <div class="crm-detail-kv">
             ${targetPanel}
@@ -2232,34 +2323,24 @@ fastify.get("/customers/:id", async (req, reply) => {
         </section>
 
         <aside class="crm-detail-side">
-          <section class="crm-detail-sidecard">
-            <div class="crm-detail-actions" style="justify-content:space-between">
-              <h2>People</h2>
-              <div class="crm-detail-actions">
-                <a class="crm-v1-chip" href="/employees/new?customer_id=${esc(c.id)}&returnTo=${encodeURIComponent(`/customers/${c.id}`)}">Add person</a>
-                <a class="crm-v1-chip" href="/employees">All people</a>
-              </div>
-            </div>
-            ${
-              linkedEmployees.length === 0
-                ? `<div class="muted">None linked yet</div>`
-                : `<table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${linkedEmployees.map((e) => `
-                    <tr>
-                      <td><a href="/employees/${e.id}?returnTo=${encodeURIComponent(personReturnHref)}">${esc(e.full_name)}</a></td>
-                      <td>${esc(e.role || "—")}</td>
-                      <td class="right">
-                        <form method="post" action="/customers/${c.id}/employees/unlink" style="margin:0">
-                          <input type="hidden" name="employee_id" value="${esc(e.id)}" />
-                          <button class="btn secondary" type="submit">Unlink</button>
-                        </form>
-                      </td>
-                    </tr>`).join("")}</tbody></table>`
-            }
-          </section>
+          ${renderOutreachProgressSummary(c, companyChecklistProgress, peopleChecklistProgress, linkedEmployees)}
+        </aside>
+      </div>
 
-          ${renderPeopleOutreachChecklist(c.id, linkedEmployees, personOutreachChecklistState)}
-
-          ${renderCustomerOutreachChecklist(c.id, outreachChecklistState)}
+      <section class="crm-workspace">
+        <div class="crm-workspace-head">
+          <div>
+            <h2>Outreach Workspace</h2>
+            <p>Track company research, person outreach, email history and notes without squeezing the workflow into a side rail.</p>
+          </div>
+        </div>
+        <div class="crm-workspace-grid">
+          <div class="crm-workspace-wide">
+            ${renderCustomerOutreachChecklist(c.id, outreachChecklistState)}
+          </div>
+          <div class="crm-workspace-wide">
+            ${renderPeopleOutreachChecklist(c.id, linkedEmployees, personOutreachChecklistState)}
+          </div>
 
           <section class="crm-detail-sidecard">
             <h2>Email history</h2>
@@ -2298,8 +2379,8 @@ fastify.get("/customers/:id", async (req, reply) => {
               }).join("")}
             </div>
           </section>
-        </aside>
-      </div>
+        </div>
+      </section>
     </main>
   </div>`;
 
