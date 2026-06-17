@@ -138,8 +138,8 @@ function ecosystemMenu(active = "crm-targets", itemClass = "", activeClass = "ac
     ["dashboard", "🏠 Dashboard", "https://hub.frontline-ai.co.uk/"],
     ["towns", "🗺️ UK Towns Tracker", "http://hub.frontline-ai.co.uk:3116/"],
     ["lead-engine", "🎯 Lead Engine", "https://hub.frontline-ai.co.uk/lead-engine"],
-    ["crm-targets", "🗄️ CRM / Targets", "http://hub.frontline-ai.co.uk:3100/targets"],
-    ["crm-customers", "👥 CRM / Customers", "http://hub.frontline-ai.co.uk:3100/customers"],
+    ["crm-targets", "🗄️ CRM / Targets", "/crm/targets"],
+    ["crm-customers", "👥 CRM / Customers", "/crm/customers"],
   ];
   return items.map(([key, label, href]) => {
     const cls = [itemClass, key === active ? activeClass : ""].filter(Boolean).join(" ");
@@ -1121,6 +1121,7 @@ fastify.get("/customers", async (req, reply) => {
 
   const body = `
   <style>
+    /* CRM_HUB_STYLE_ALIGNMENT_V1 */
     .top{display:none}
     .wrap{max-width:none!important;margin:0!important;padding:0!important}
     .crm-v1-shell{
@@ -1129,6 +1130,7 @@ fastify.get("/customers", async (req, reply) => {
       gap:0;
       align-items:start;
       min-height:100vh;
+      background:radial-gradient(circle at top left,#172942 0,#07111f 36%,#050a12 100%);
     }
     .crm-v1-side{
       position:sticky;
@@ -1215,16 +1217,13 @@ fastify.get("/customers", async (req, reply) => {
       width:100%;
     }
     .crm-v1-header{
-      border:1px solid rgba(224,236,255,.28);
-      border-radius:28px;
-      padding:18px 22px;
-      background:
-        radial-gradient(circle at 78% 14%, rgba(112,184,255,.24), transparent 28%),
-        radial-gradient(circle at 12% 0%, rgba(114,95,255,.22), transparent 30%),
-        linear-gradient(135deg, rgba(40,66,118,.42), rgba(26,48,96,.30));
+      border:1px solid rgba(255,255,255,.09);
+      border-radius:20px;
+      padding:18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
       backdrop-filter:blur(20px);
       -webkit-backdrop-filter:blur(20px);
-      box-shadow:0 24px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.12);
+      box-shadow:0 16px 50px rgba(0,0,0,.22);
     }
     .crm-v1-header-top{
       display:flex;
@@ -1240,18 +1239,18 @@ fastify.get("/customers", async (req, reply) => {
       display:inline-flex;
       align-items:center;
       gap:8px;
-      padding:8px 12px;
+      padding:0;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.05);
-      color:#d9e6ff;
+      border:0;
+      background:transparent;
+      color:#d8ad4c;
       font-size:12px;
       font-weight:800;
-      letter-spacing:.12em;
+      letter-spacing:.16em;
       text-transform:uppercase;
     }
     .crm-v1-header h1{
-      margin:14px 0 6px;
+      margin:6px 0;
       font-size:36px;
       line-height:1.02;
       letter-spacing:-.04em;
@@ -1276,25 +1275,25 @@ fastify.get("/customers", async (req, reply) => {
       margin-top:18px;
     }
     .crm-v1-stat{
-      background:linear-gradient(180deg, rgba(252,253,255,.98), rgba(242,247,255,.96));
-      color:#0e1a36;
-      border-radius:24px;
-      padding:18px 18px 16px;
-      border:1px solid rgba(207,220,255,.86);
-      box-shadow:0 18px 34px rgba(3,8,20,.18);
+      background:rgba(255,255,255,.04);
+      color:#f4f7fb;
+      border-radius:18px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,.09);
+      box-shadow:none;
     }
     .crm-v1-stat-k{
       font-size:32px;
       line-height:1;
       font-weight:900;
       letter-spacing:-.05em;
-      color:#10224d;
+      color:#f4f7fb;
     }
     .crm-v1-stat-l{
       margin-top:8px;
       font-size:13px;
       font-weight:800;
-      color:#3c4d77;
+      color:#94a3b8;
       text-transform:uppercase;
       letter-spacing:.08em;
     }
@@ -1305,25 +1304,25 @@ fastify.get("/customers", async (req, reply) => {
       align-items:start;
     }
     .crm-v1-surface{
-      background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(248,251,255,.90));
-      color:#122247;
-      border:1px solid rgba(231,239,255,.92);
-      border-radius:28px;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));
+      color:#f4f7fb;
+      border:1px solid rgba(255,255,255,.09);
+      border-radius:20px;
       padding:18px;
       backdrop-filter:blur(16px);
       -webkit-backdrop-filter:blur(16px);
-      box-shadow:0 18px 40px rgba(0,0,0,.12);
+      box-shadow:0 16px 50px rgba(0,0,0,.22);
     }
     .crm-v1-surface h2{
       margin:0;
       font-size:24px;
       line-height:1.1;
       letter-spacing:-.03em;
-      color:#0f214b;
+      color:#f4f7fb;
     }
     .crm-v1-surface-sub{
       margin-top:6px;
-      color:#60739d;
+      color:#9aa8bd;
       font-size:14px;
     }
     .crm-v1-filterbar{
@@ -1334,15 +1333,15 @@ fastify.get("/customers", async (req, reply) => {
       align-items:end;
     }
     .crm-v1-filterbar label{
-      color:#5870a1;
+      color:#9aa8bd;
       font-weight:800;
       margin-bottom:6px;
     }
     .crm-v1-filterbar input{
-      background:#fff !important;
-      color:#10224d !important;
-      border:1px solid rgba(181,198,235,.92) !important;
-      border-radius:16px !important;
+      background:#07111f !important;
+      color:#f4f7fb !important;
+      border:1px solid rgba(255,255,255,.09) !important;
+      border-radius:12px !important;
       padding:13px 14px !important;
     }
     .crm-v1-list{
@@ -1359,16 +1358,16 @@ fastify.get("/customers", async (req, reply) => {
       gap:12px;
       align-items:center;
       padding:16px 16px;
-      border-radius:22px;
-      border:1px solid rgba(191,207,242,.88);
-      background:linear-gradient(180deg, #ffffff, #f5f8ff);
-      color:#10224d;
-      box-shadow:0 12px 26px rgba(13,23,48,.08);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.035);
+      color:#d8e2f1;
+      box-shadow:none;
     }
     .crm-v1-row.active{
-      border-color:rgba(72,126,255,.56);
-      box-shadow:0 16px 30px rgba(34,83,212,.16);
-      background:linear-gradient(180deg, #f7fbff, #edf4ff);
+      border-color:rgba(216,173,76,.45);
+      box-shadow:0 12px 28px rgba(0,0,0,.18);
+      background:linear-gradient(135deg,rgba(216,173,76,.16),rgba(216,173,76,.06));
     }
     .crm-v1-row:hover{
       transform:translateY(-1px);
@@ -1377,11 +1376,11 @@ fastify.get("/customers", async (req, reply) => {
       font-size:18px;
       font-weight:800;
       line-height:1.1;
-      color:#0f214b;
+      color:#f4f7fb;
     }
     .crm-v1-meta{
       margin-top:5px;
-      color:#64759b;
+      color:#9aa8bd;
       font-size:13px;
     }
     .crm-v1-badge{
@@ -1390,22 +1389,22 @@ fastify.get("/customers", async (req, reply) => {
       justify-content:center;
       padding:7px 10px;
       border-radius:999px;
-      border:1px solid rgba(166,188,238,.9);
-      background:#eef4ff;
-      color:#35508c;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:#d8e2f1;
       font-size:12px;
       font-weight:800;
     }
     .crm-v1-row a{
-      color:#215bda;
+      color:#7cc4ff;
       font-weight:700;
     }
     .crm-v1-empty{
       padding:28px 18px;
-      border-radius:22px;
-      border:1px dashed rgba(181,198,235,.92);
-      color:#6980ad;
-      background:#f8fbff;
+      border-radius:14px;
+      border:1px dashed rgba(216,173,76,.35);
+      color:#9aa8bd;
+      background:rgba(216,173,76,.06);
       text-align:center;
     }
     .crm-v1-panel{
@@ -1423,11 +1422,11 @@ fastify.get("/customers", async (req, reply) => {
       line-height:1.02;
       font-weight:900;
       letter-spacing:-.04em;
-      color:#0f214b;
+      color:#f4f7fb;
     }
     .crm-v1-preview-sub{
       margin-top:8px;
-      color:#61749d;
+      color:#9aa8bd;
       font-size:15px;
     }
     .crm-v1-kv{
@@ -1436,12 +1435,12 @@ fastify.get("/customers", async (req, reply) => {
     }
     .crm-v1-kv-item{
       padding:14px 16px;
-      border-radius:18px;
-      background:#f7faff;
-      border:1px solid rgba(198,213,246,.9);
+      border-radius:14px;
+      background:rgba(255,255,255,.035);
+      border:1px solid rgba(255,255,255,.08);
     }
     .crm-v1-kv-label{
-      color:#6580af;
+      color:#98a7bb;
       font-size:12px;
       font-weight:800;
       text-transform:uppercase;
@@ -1449,7 +1448,7 @@ fastify.get("/customers", async (req, reply) => {
     }
     .crm-v1-kv-value{
       margin-top:6px;
-      color:#10224d;
+      color:#d8e2f1;
       font-size:16px;
       font-weight:700;
       line-height:1.4;
@@ -1466,9 +1465,9 @@ fastify.get("/customers", async (req, reply) => {
       gap:8px;
       padding:8px 10px;
       border-radius:999px;
-      background:#eef4ff;
-      border:1px solid rgba(170,191,238,.9);
-      color:#35508c;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      color:#d8e2f1;
       font-size:12px;
       font-weight:800;
     }
@@ -1500,7 +1499,7 @@ fastify.get("/customers", async (req, reply) => {
       font-size:13px;
     }
     .crm-v1-note{
-      color:#5d739f;
+      color:#b8c4d6;
       line-height:1.55;
       font-size:14px;
       white-space:pre-wrap;
@@ -1737,23 +1736,24 @@ fastify.get("/targets", async (req, reply) => {
 
   const body = `
   <style>
+    /* CRM_TARGETS_STYLE_ALIGNMENT_V1 | CRM_TARGETS_COLOUR_MATCH_EXPLICIT_V1 */
     .top{display:none}
     .wrap{max-width:none!important;margin:0!important;padding:0!important}
     .target-shell{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
-    .target-header,.target-card{border:1px solid rgba(224,236,255,.22);border-radius:24px;padding:18px;background:linear-gradient(180deg,rgba(15,23,42,.88),rgba(2,6,23,.94));box-shadow:0 20px 50px rgba(0,0,0,.28)}
+    .target-header,.target-card{border:1px solid rgba(224,236,255,.16);border-radius:20px;padding:18px;background:radial-gradient(circle at top right, rgba(255,255,255,.24), transparent 30%),linear-gradient(180deg, rgba(40,66,118,.46), rgba(24,42,82,.32));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
     .target-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
-    .target-title{font-size:34px;font-weight:900;color:#fff;letter-spacing:-.03em}
-    .target-sub{color:#94a3b8;margin-top:6px}
+    .target-title{font-size:36px;font-weight:900;color:#f8fbff;letter-spacing:-.04em}
+    .target-sub{color:rgba(226,235,255,.72);margin-top:6px;font-size:15px;line-height:1.5}
     .target-nav{display:flex;gap:10px;flex-wrap:wrap}
-    .target-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}
-    .target-kpi{border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}
-    .target-kpi b{display:block;font-size:26px;color:#fff}.target-kpi span{color:#94a3b8;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-    .target-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-    .target-filter{display:inline-flex;padding:8px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:#dbeafe;font-weight:800;font-size:12px}
-    .target-filter.active{background:linear-gradient(180deg,rgba(66,123,255,.24),rgba(35,83,210,.18));border-color:rgba(102,147,255,.44)}
-    .target-table{width:100%;border-collapse:collapse}.target-table th,.target-table td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);vertical-align:top}.target-table th{color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.target-table td{color:#e5edf9}
-    .target-status-form{display:grid;grid-template-columns:1fr 1fr 1.5fr auto;gap:8px;align-items:end;margin-top:8px}.target-status-form input,.target-status-form select{min-height:38px}
-    @media(max-width:900px){.target-shell{padding:18px}.target-kpis{grid-template-columns:1fr 1fr}.target-table{display:block;overflow:auto}.target-status-form{grid-template-columns:1fr}}
+    .target-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:18px}
+    .target-kpi{border:1px solid rgba(224,236,255,.14);border-radius:18px;padding:14px;background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025))}
+    .target-kpi b{display:block;font-size:32px;line-height:1;font-weight:900;letter-spacing:-.05em;color:#f8fbff}.target-kpi span{display:block;margin-top:8px;color:rgba(226,235,255,.58);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+    .target-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+    .target-filter{display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;border:1px solid rgba(224,236,255,.14);background:rgba(255,255,255,.035);color:#e2ebff;font-weight:800;font-size:13px}
+    .target-filter.active{background:linear-gradient(135deg,rgba(216,173,76,.26),rgba(216,173,76,.10));border-color:rgba(216,173,76,.50);color:#fff7d6}
+    .target-table{width:100%;border-collapse:separate;border-spacing:0 8px}.target-table th,.target-table td{padding:12px 10px;text-align:left;vertical-align:top}.target-table th{color:rgba(226,235,255,.58);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.target-table td{color:#e2ebff}.target-table a{color:#a7d8ff}.target-main-row td{background:rgba(10,20,36,.62);border-top:1px solid rgba(224,236,255,.12);border-bottom:1px solid rgba(224,236,255,.12)}.target-main-row td:first-child{border-left:1px solid rgba(224,236,255,.12);border-radius:14px 0 0 14px}.target-main-row td:last-child{border-right:1px solid rgba(224,236,255,.12);border-radius:0 14px 14px 0}.target-detail-row td{padding:0 10px 14px}.target-detail-panel{border:1px solid rgba(224,236,255,.13);border-radius:14px;background:rgba(7,17,31,.72);padding:12px;margin-top:-8px}
+    .target-status-form{display:grid;grid-template-columns:1fr 1fr minmax(220px,1.5fr) auto;gap:10px;align-items:end}.target-status-form label{margin:0;color:rgba(226,235,255,.58);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.target-status-form input,.target-status-form select{min-height:42px;margin-top:6px;background:#07111f;color:#f4f7fb;border:1px solid rgba(224,236,255,.14);border-radius:12px}.target-archive-form{margin-top:10px;text-align:right}.target-empty td{padding:24px 18px;border:1px dashed rgba(216,173,76,.50);border-radius:14px;color:rgba(226,235,255,.62);background:rgba(216,173,76,.10);text-align:center}
+    @media(max-width:900px){.target-shell{padding:18px}.target-kpis{grid-template-columns:1fr 1fr}.target-table{display:block;overflow:auto}.target-status-form{grid-template-columns:1fr}.target-main-row td:first-child,.target-main-row td:last-child{border-radius:0}}
   </style>
   <div class="hub-ecosystem-layout">
     ${hubSidebar("crm-targets")}
@@ -1787,7 +1787,7 @@ fastify.get("/targets", async (req, reply) => {
         <thead><tr><th>Business</th><th>Town</th><th>Industry</th><th>Email</th><th>Phone</th><th>Target status</th><th>Next follow-up</th><th>Open record</th></tr></thead>
         <tbody>
           ${rows.map(r => `
-            <tr>
+            <tr class="target-main-row">
               <td><b>${esc(r.business || r.name)}</b><div class="muted">${esc(r.name || "")}</div></td>
               <td>${esc(r.town || "—")}</td>
               <td>${esc(r.lead_industry || "—")}</td>
@@ -1797,20 +1797,22 @@ fastify.get("/targets", async (req, reply) => {
               <td>${esc(r.next_follow_up_at || "—")}</td>
               <td><a class="btn secondary" href="/customers/${r.id}?returnTo=${encodeURIComponent(currentTargetsReturn)}">Open</a></td>
             </tr>
-            <tr>
+            <tr class="target-detail-row">
               <td colspan="8">
+                <div class="target-detail-panel">
                 <form class="target-status-form" method="POST" action="/targets/${r.id}/status">
                   <label>Status<select name="target_status">${TARGET_STATUSES.map(s => `<option value="${esc(s)}" ${s === (r.target_status || "new_target") ? "selected" : ""}>${esc(targetStatusLabel(s))}</option>`).join("")}</select></label>
                   <label>Next follow-up<input name="next_follow_up_at" value="${esc(r.next_follow_up_at || "")}" placeholder="YYYY-MM-DD"></label>
                   <label>Pipeline note<input name="pipeline_notes" placeholder="Append a note"></label>
                   <button class="btn" type="submit">Update</button>
                 </form>
-                <form method="POST" action="/targets/${r.id}/archive" style="margin-top:8px;text-align:right" onsubmit="return confirm('Remove this record from Targets? The customer record will be kept.');">
+                <form class="target-archive-form" method="POST" action="/targets/${r.id}/archive" onsubmit="return confirm('Remove this record from Targets? The customer record will be kept.');">
                   <button class="btn secondary" type="submit">Remove from targets</button>
                 </form>
+                </div>
               </td>
             </tr>
-          `).join("") || `<tr><td colspan="9">No targets found.</td></tr>`}
+          `).join("") || `<tr class="target-empty"><td colspan="8">No targets found.</td></tr>`}
         </tbody>
       </table>
       </section>
