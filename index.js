@@ -56,6 +56,26 @@ CREATE TABLE IF NOT EXISTS touchpoints (
   FOREIGN KEY(customerId) REFERENCES customers(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS customer_outreach_checklist (
+  customer_id INTEGER NOT NULL,
+  item_key TEXT NOT NULL,
+  checked INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (customer_id, item_key),
+  FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS customer_person_outreach_checklist (
+  customer_id INTEGER NOT NULL,
+  employee_id INTEGER NOT NULL,
+  item_key TEXT NOT NULL,
+  checked INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (customer_id, employee_id, item_key),
+  FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+  FOREIGN KEY(employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS employees (
   id INTEGER PRIMARY KEY,
   full_name TEXT NOT NULL,
@@ -85,6 +105,8 @@ CREATE INDEX IF NOT EXISTS idx_employee_customers_employee_id ON employee_custom
 CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
 CREATE INDEX IF NOT EXISTS idx_customers_town ON customers(town);
 CREATE INDEX IF NOT EXISTS idx_touchpoints_customerId ON touchpoints(customerId);
+CREATE INDEX IF NOT EXISTS idx_customer_outreach_checklist_customer_id ON customer_outreach_checklist(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_person_outreach_checklist_customer_id ON customer_person_outreach_checklist(customer_id);
 `);
 
 // CRM_TARGET_PIPELINE_V1
@@ -121,6 +143,132 @@ db.prepare(`
 
 function now() {
   return Date.now();
+}
+
+// CRM_TARGET_OUTREACH_CHECKLIST_V1
+// CRM_TARGET_OUTREACH_CHECKLIST_REMODEL_V1
+const CUSTOMER_OUTREACH_CHECKLIST = [
+  {
+    section: "Company level",
+    items: [
+      ["company_email_sent", "Company email sent"],
+      ["company_public_number_called", "Company public number called"],
+      ["website_contact_form_submitted", "Website contact form submitted"],
+      ["facebook_message_route_tried", "Facebook/message route tried"],
+    ],
+  },
+  {
+    section: "People research",
+    items: [
+      ["people_identified", "People identified"],
+      ["decision_maker_identified", "Decision maker identified"],
+    ],
+  },
+];
+
+const CUSTOMER_PERSON_OUTREACH_CHECKLIST = [
+  ["linkedin_profile_captured", "LinkedIn profile captured"],
+  ["linkedin_connection_sent", "LinkedIn connection sent"],
+  ["linkedin_message_sent", "LinkedIn message sent"],
+  ["person_emailed", "Person emailed"],
+  ["person_called", "Person called"],
+  ["follow_up_scheduled", "Follow-up scheduled"],
+];
+
+function customerOutreachChecklistState(customerId) {
+  const rows = db.prepare(`
+    SELECT item_key, checked, updated_at
+    FROM customer_outreach_checklist
+    WHERE customer_id=?
+  `).all(customerId);
+  const state = new Map();
+  for (const row of rows) state.set(row.item_key, row);
+  return state;
+}
+
+function customerPersonOutreachChecklistState(customerId) {
+  const rows = db.prepare(`
+    SELECT employee_id, item_key, checked, updated_at
+    FROM customer_person_outreach_checklist
+    WHERE customer_id=?
+  `).all(customerId);
+  const state = new Map();
+  for (const row of rows) {
+    const employeeId = Number(row.employee_id);
+    if (!state.has(employeeId)) state.set(employeeId, new Map());
+    state.get(employeeId).set(row.item_key, row);
+  }
+  return state;
+}
+
+function renderCustomerOutreachChecklist(customerId, state) {
+  return `
+    <section class="crm-detail-sidecard">
+      <div class="crm-detail-actions" style="justify-content:space-between">
+        <h2>Company Outreach Checklist</h2>
+      </div>
+      <form method="post" action="/customers/${esc(customerId)}/outreach-checklist">
+        ${CUSTOMER_OUTREACH_CHECKLIST.map(group => `
+          <div class="crm-checklist-section">
+            <div class="crm-detail-label">${esc(group.section)}</div>
+            <div class="crm-checklist-items">
+              ${group.items.map(([key, label]) => {
+                const row = state.get(key);
+                const checked = row && Number(row.checked) === 1;
+                return `<label class="crm-checklist-row">
+                  <input type="checkbox" name="items" value="${esc(key)}" ${checked ? "checked" : ""} />
+                  <span>${esc(label)}</span>
+                  ${row && row.updated_at ? `<em>${esc(row.updated_at.slice(0, 16))}</em>` : ""}
+                </label>`;
+              }).join("")}
+            </div>
+          </div>
+        `).join("")}
+        <div class="crm-detail-actions" style="justify-content:flex-end;margin-top:12px">
+          <button class="btn" type="submit">Save checklist</button>
+        </div>
+      </form>
+    </section>
+  `;
+}
+
+function renderPeopleOutreachChecklist(customerId, people, state) {
+  return `
+    <section class="crm-detail-sidecard">
+      <div class="crm-detail-actions" style="justify-content:space-between">
+        <h2>People Outreach</h2>
+      </div>
+      ${people.length === 0
+        ? `<div class="muted">No people linked yet. Add a person before tracking person outreach.</div>`
+        : `<div class="crm-people-outreach-list">
+            ${people.map(person => {
+              const personState = state.get(Number(person.id)) || new Map();
+              return `<details class="crm-person-outreach">
+                <summary>
+                  <span>${esc(person.full_name)}</span>
+                  <em>${esc(person.role || "Person")}</em>
+                </summary>
+                <form method="post" action="/customers/${esc(customerId)}/people/${esc(person.id)}/outreach-checklist">
+                  <div class="crm-checklist-items">
+                    ${CUSTOMER_PERSON_OUTREACH_CHECKLIST.map(([key, label]) => {
+                      const row = personState.get(key);
+                      const checked = row && Number(row.checked) === 1;
+                      return `<label class="crm-checklist-row">
+                        <input type="checkbox" name="items" value="${esc(key)}" ${checked ? "checked" : ""} />
+                        <span>${esc(label)}</span>
+                        ${row && row.updated_at ? `<em>${esc(row.updated_at.slice(0, 16))}</em>` : ""}
+                      </label>`;
+                    }).join("")}
+                  </div>
+                  <div class="crm-detail-actions" style="justify-content:flex-end;margin-top:12px">
+                    <button class="btn" type="submit">Save person outreach</button>
+                  </div>
+                </form>
+              </details>`;
+            }).join("")}
+          </div>`}
+    </section>
+  `;
 }
 
 function esc(s) {
@@ -209,11 +357,18 @@ function crmSafeReturnPath(value, fallback = "/customers") {
   if (path === "/crm") path = "/customers";
   if (
     path === "/targets" || path.startsWith("/targets?") ||
-    path === "/customers" || path.startsWith("/customers?")
+    path === "/customers" || path.startsWith("/customers?") ||
+    /^\/customers\/\d+(?:\?.*)?$/.test(path) ||
+    path === "/employees" || path.startsWith("/employees?") ||
+    /^\/employees\/\d+(?:\?.*)?$/.test(path)
   ) {
     return path;
   }
   return fallback;
+}
+
+function crmSinglePartValue(value) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function crmNormLower(s) {
@@ -1693,7 +1848,7 @@ fastify.get("/customers", async (req, reply) => {
                   <div class="crm-v1-kv-label">People</div>
                   <div class="crm-v1-kv-value">
                     ${selectedEmployees.length
-                      ? `<div class="crm-v1-chiprow">${selectedEmployees.map(e => `<a class="crm-v1-chip" href="/employees/${e.id}">${esc(e.full_name)}${e.role ? ` • ${esc(e.role)}` : ""}</a>`).join("")}</div>`
+                      ? `<div class="crm-v1-chiprow">${selectedEmployees.map(e => `<a class="crm-v1-chip" href="/employees/${e.id}?returnTo=${encodeURIComponent(currentCustomersReturn)}">${esc(e.full_name)}${e.role ? ` • ${esc(e.role)}` : ""}</a>`).join("")}</div>`
                       : `<span class="muted">No linked people yet</span>`}
                   </div>
                 </div>
@@ -1981,8 +2136,11 @@ fastify.get("/customers/:id", async (req, reply) => {
 
   const linkedEmployees = customerEmployeeLinks(id);
   const allEmployees = allEmployeesForPicklist();
+  const outreachChecklistState = customerOutreachChecklistState(id);
+  const personOutreachChecklistState = customerPersonOutreachChecklistState(id);
   const isTarget = isTargetCustomer(c);
   const backHref = crmSafeReturnPath(req.query && req.query.returnTo, "/customers");
+  const personReturnHref = `/customers/${c.id}?returnTo=${encodeURIComponent(backHref)}`;
   const detailNavActive = backHref.startsWith("/targets") ? "crm-targets" : "crm-customers";
   const targetPanel = isTarget ? `
         <div class="crm-detail-kv-item crm-detail-wide">
@@ -2020,6 +2178,7 @@ fastify.get("/customers/:id", async (req, reply) => {
     .crm-v1-head-actions,.crm-detail-actions,.crm-detail-chiprow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.crm-detail-status{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}.crm-detail-status div{text-align:right}.crm-detail-status span,.crm-detail-label,.crm-detail-kv-grid span{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-status strong,.crm-detail-kv-grid strong{display:block;color:#f4f7fb;margin-top:4px}
     .crm-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}.crm-detail-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.crm-detail-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.crm-detail-wide{grid-column:1/-1}.crm-detail-value{margin-top:6px;color:#d8e2f1;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.crm-detail-value a,.crm-detail-sidecard a{color:#7cc4ff}.crm-detail-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.crm-detail-note{margin-top:6px;white-space:pre-wrap;line-height:1.55;color:#d8e2f1;overflow-wrap:anywhere}
     .crm-v1-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:#d8e2f1;font-size:12px;font-weight:800}.crm-detail-side{display:grid;gap:12px}.crm-detail-sidecard h2{margin:0 0 10px;color:#f4f7fb;font-size:18px}.crm-detail-sidecard label{color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-sidecard input,.crm-detail-sidecard textarea,.crm-detail-sidecard select{background:#07111f;color:#f4f7fb;border:1px solid rgba(255,255,255,.09);border-radius:12px}.crm-detail-sidecard table{width:100%;border-collapse:collapse}.crm-detail-sidecard th,.crm-detail-sidecard td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}.crm-detail-sidecard th{color:#98a7bb;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.crm-detail-email{border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:12px}.crm-detail-pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;margin:10px 0 0;border:1px solid rgba(255,255,255,.08);background:#07111f;padding:10px;border-radius:10px;color:#d8e2f1}
+    .crm-checklist-section{padding-top:12px;margin-top:12px;border-top:1px solid rgba(255,255,255,.08)}.crm-checklist-section:first-child{border-top:0;margin-top:0;padding-top:0}.crm-checklist-items{display:grid;gap:8px;margin-top:8px}.crm-detail-sidecard .crm-checklist-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1;font-size:13px;font-weight:800;text-transform:none;letter-spacing:0}.crm-checklist-row input{width:18px!important;height:18px!important;padding:0!important;margin:0;accent-color:#d8ad4c}.crm-checklist-row span{color:#f4f7fb}.crm-checklist-row em{font-style:normal;color:#98a7bb;font-size:11px;font-weight:800}.crm-people-outreach-list{display:grid;gap:10px}.crm-person-outreach{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);padding:10px 12px}.crm-person-outreach summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center;color:#f4f7fb;font-weight:900}.crm-person-outreach summary em{font-style:normal;color:#98a7bb;font-size:12px;font-weight:800}.crm-person-outreach form{margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
     @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-detail-grid{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-header-top{display:grid}.crm-detail-status{justify-content:flex-start}.crm-detail-status div{text-align:left}}
   </style>
   <div class="crm-v1-shell">
@@ -2074,13 +2233,19 @@ fastify.get("/customers/:id", async (req, reply) => {
 
         <aside class="crm-detail-side">
           <section class="crm-detail-sidecard">
-            <div class="crm-detail-actions" style="justify-content:space-between"><h2>People</h2><a class="crm-v1-chip" href="/employees">People</a></div>
+            <div class="crm-detail-actions" style="justify-content:space-between">
+              <h2>People</h2>
+              <div class="crm-detail-actions">
+                <a class="crm-v1-chip" href="/employees/new?customer_id=${esc(c.id)}&returnTo=${encodeURIComponent(`/customers/${c.id}`)}">Add person</a>
+                <a class="crm-v1-chip" href="/employees">All people</a>
+              </div>
+            </div>
             ${
               linkedEmployees.length === 0
                 ? `<div class="muted">None linked yet</div>`
                 : `<table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${linkedEmployees.map((e) => `
                     <tr>
-                      <td><a href="/employees/${e.id}">${esc(e.full_name)}</a></td>
+                      <td><a href="/employees/${e.id}?returnTo=${encodeURIComponent(personReturnHref)}">${esc(e.full_name)}</a></td>
                       <td>${esc(e.role || "—")}</td>
                       <td class="right">
                         <form method="post" action="/customers/${c.id}/employees/unlink" style="margin:0">
@@ -2090,14 +2255,11 @@ fastify.get("/customers/:id", async (req, reply) => {
                       </td>
                     </tr>`).join("")}</tbody></table>`
             }
-            <form method="post" action="/customers/${c.id}/employees/link" style="margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px">
-              <label>Link existing people</label>
-              <select name="employeeIds" multiple size="8">
-                ${allEmployees.filter((e) => !linkedEmployees.some((x) => x.id === e.id)).map((e) => `<option value="${e.id}">${esc(e.full_name)}${e.role ? " • " + esc(e.role) : ""}</option>`).join("")}
-              </select>
-              <div class="crm-detail-actions" style="margin-top:10px;justify-content:flex-end"><button class="btn" type="submit">Link</button></div>
-            </form>
           </section>
+
+          ${renderPeopleOutreachChecklist(c.id, linkedEmployees, personOutreachChecklistState)}
+
+          ${renderCustomerOutreachChecklist(c.id, outreachChecklistState)}
 
           <section class="crm-detail-sidecard">
             <h2>Email history</h2>
@@ -2155,6 +2317,66 @@ fastify.post("/customers/:id/touchpoints", async (req, reply) => {
     now()
   );
   db.prepare(`UPDATE customers SET updatedAt=? WHERE id=?`).run(now(), id);
+  return reply.redirect(`/customers/${id}`);
+});
+
+fastify.post("/customers/:id/outreach-checklist", async (req, reply) => {
+  if (!requireAuth(req, reply)) return;
+  const id = Number(req.params.id);
+  const c = db.prepare(`SELECT id FROM customers WHERE id=?`).get(id);
+  if (!c) return reply.code(404).type("text/html").send(layout("Not found", `<div class="card">Not found</div>`));
+
+  const b = req.body || {};
+  const checkedRaw = b.items;
+  const checkedItems = new Set((Array.isArray(checkedRaw) ? checkedRaw : (checkedRaw ? [checkedRaw] : [])).map(String));
+  const knownKeys = CUSTOMER_OUTREACH_CHECKLIST.flatMap(group => group.items.map(([key]) => key));
+  const upsert = db.prepare(`
+    INSERT INTO customer_outreach_checklist (customer_id, item_key, checked, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(customer_id, item_key)
+    DO UPDATE SET checked=excluded.checked, updated_at=datetime('now')
+  `);
+  const save = db.transaction(() => {
+    for (const key of knownKeys) {
+      upsert.run(id, key, checkedItems.has(key) ? 1 : 0);
+    }
+    db.prepare(`UPDATE customers SET updatedAt=? WHERE id=?`).run(now(), id);
+  });
+  save();
+
+  return reply.redirect(`/customers/${id}`);
+});
+
+fastify.post("/customers/:id/people/:employeeId/outreach-checklist", async (req, reply) => {
+  if (!requireAuth(req, reply)) return;
+  const id = Number(req.params.id);
+  const employeeId = Number(req.params.employeeId);
+  const linked = db.prepare(`
+    SELECT 1
+    FROM employee_customers
+    WHERE customer_id=? AND employee_id=?
+    LIMIT 1
+  `).get(id, employeeId);
+  if (!linked) return reply.code(404).type("text/html").send(layout("Not found", `<div class="card">Person is not linked to this company</div>`));
+
+  const b = req.body || {};
+  const checkedRaw = b.items;
+  const checkedItems = new Set((Array.isArray(checkedRaw) ? checkedRaw : (checkedRaw ? [checkedRaw] : [])).map(String));
+  const knownKeys = CUSTOMER_PERSON_OUTREACH_CHECKLIST.map(([key]) => key);
+  const upsert = db.prepare(`
+    INSERT INTO customer_person_outreach_checklist (customer_id, employee_id, item_key, checked, updated_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(customer_id, employee_id, item_key)
+    DO UPDATE SET checked=excluded.checked, updated_at=datetime('now')
+  `);
+  const save = db.transaction(() => {
+    for (const key of knownKeys) {
+      upsert.run(id, employeeId, key, checkedItems.has(key) ? 1 : 0);
+    }
+    db.prepare(`UPDATE customers SET updatedAt=? WHERE id=?`).run(now(), id);
+  });
+  save();
+
   return reply.redirect(`/customers/${id}`);
 });
 
@@ -2824,6 +3046,7 @@ fastify.get("/employees", async (req, reply) => {
     withEmail: db.prepare(`SELECT COUNT(1) AS n FROM employees WHERE TRIM(COALESCE(email,'')) != ''`).get().n,
     linkedCompanies: db.prepare(`SELECT COUNT(DISTINCT customer_id) AS n FROM employee_customers`).get().n,
   };
+  const currentPeopleReturn = `/employees${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
   const body = renderPeopleShell("People", "CRM contacts linked to target companies and customer records.", `
     <section class="crm-v1-header">
@@ -2842,7 +3065,7 @@ fastify.get("/employees", async (req, reply) => {
       <div class="crm-v1-list">
         ${rows.length ? rows.map((e) => `
           <div class="crm-v1-row">
-            <div><a class="crm-v1-name" href="/employees/${e.id}">${esc(e.full_name)}</a><div class="crm-v1-meta">${esc(e.linkedin_url || "No LinkedIn saved")}</div></div>
+            <div><a class="crm-v1-name" href="/employees/${e.id}?returnTo=${encodeURIComponent(currentPeopleReturn)}">${esc(e.full_name)}</a><div class="crm-v1-meta">${esc(e.linkedin_url || "No LinkedIn saved")}</div></div>
             <div class="crm-v1-badge">${esc(e.role || "No role")}</div>
             <div class="crm-v1-badge">${esc(e.stage || "No stage")}</div>
             <div class="crm-v1-badge">${esc(e.status || "No status")}</div>
@@ -2851,38 +3074,250 @@ fastify.get("/employees", async (req, reply) => {
           </div>`).join("") : `<div class="crm-v1-empty">No people found yet.</div>`}
       </div>
     </section>
-  `, `<a class="btn" href="/employees/new">Add person</a>`);
+  `, `<a class="btn" href="/customers">Choose company first</a>`);
 
   return reply.type("text/html").send(layout("People", body));
 });
 
-fastify.get("/employees/new", async (req, reply) => {
-  if (!requireAuth(req, reply)) return;
-  const cs = allCustomersForPicklist();
+function renderAddPersonPage(scopedCustomer, returnTo, draft = {}, extractError = "") {
+  if (!scopedCustomer) {
+    return renderPeopleShell("Add Person", "People are created from an existing company record.", `
+      <section class="crm-v1-surface">
+        <div class="crm-v1-empty">
+          <strong>Select a company before adding a person.</strong>
+          <div class="crm-v1-meta" style="margin-top:8px">Open a company record, then use Add person from its People panel.</div>
+          <div class="crm-v1-head-actions" style="justify-content:center;margin-top:16px">
+            <a class="btn" href="/customers">Choose company</a>
+          </div>
+        </div>
+      </section>
+    `, `<a class="btn secondary" href="/customers">Customers</a>`);
+  }
+  const companyLabel = `${scopedCustomer.business || scopedCustomer.name || "Company"}${scopedCustomer.town ? " - " + scopedCustomer.town : ""}`;
+  const companyField = `<div class="people-kv-item wide" style="grid-column:1/-1">
+        <div class="people-label">Adding person for</div>
+        <div class="people-value">${esc(companyLabel)}</div>
+        <div class="crm-v1-meta" style="margin-top:6px">This person will be linked to this company when saved.</div>
+        <input type="hidden" name="customerIds" value="${esc(scopedCustomer.id)}" />
+        <input type="hidden" name="customer_ids" value="${esc(scopedCustomer.id)}" />
+        <input type="hidden" name="returnTo" value="${esc(returnTo)}" />
+      </div>`;
   const stageOptions = ["", "New", "Connected", "Replied", "Interested", "Call Booked", "Not Interested", "No Response", "Closed Won"];
   const statusOptions = ["", "Waiting reply", "Follow-up today", "Follow-up later", "Call booked", "Not interested"];
-  const body = renderPeopleShell("Add Person", "Create a CRM person/contact and link them to one or more companies.", `
+  const notes = String(draft.notes || "").trim();
+  const linkedinUrl = String(draft.linkedin_url || "").trim();
+  const body = renderPeopleShell("Add Person", `Create a CRM person/contact for ${companyLabel}.`, `
+    <section class="crm-v1-surface">
+      <div class="crm-v1-header-top" style="align-items:flex-start">
+        <div>
+          <h2 style="margin:0">Build from LinkedIn</h2>
+          <p class="crm-v1-meta" style="margin:6px 0 0">Paste a LinkedIn URL and/or upload a screenshot. This creates an editable draft only.</p>
+        </div>
+      </div>
+      ${extractError ? `<div class="crm-v1-empty" style="margin-top:12px;border-color:rgba(255,128,128,.35)">${esc(extractError)}</div>` : ""}
+      <form class="people-form" method="post" action="/employees/new/extract-linkedin" enctype="multipart/form-data" style="margin-top:14px">
+        <input type="hidden" name="customer_id" value="${esc(scopedCustomer.id)}" />
+        <input type="hidden" name="returnTo" value="${esc(returnTo)}" />
+        <div class="people-form-grid">
+          <label class="wide">LinkedIn profile URL<input name="linkedin_url" value="${esc(linkedinUrl)}" placeholder="https://www.linkedin.com/in/..." /></label>
+          <label class="wide">Screenshot/image<input name="profile_screenshot" type="file" accept="image/*" /></label>
+        </div>
+        <div class="crm-v1-head-actions" style="justify-content:flex-end;margin-top:14px"><button class="btn" type="submit">Extract details</button></div>
+      </form>
+    </section>
     <section class="crm-v1-surface">
       <form class="people-form" method="post" action="/employees/new">
         <div class="people-form-grid">
-          <label>Full name<input name="full_name" required /></label>
-          <label>First name<input name="first_name" /></label>
-          <label>Role / job title<input name="role" /></label>
-          <label>LinkedIn URL<input name="linkedin_url" /></label>
-          <label>Phone<input name="phone" inputmode="tel" autocomplete="tel" /></label>
-          <label>Email<input name="email" type="email" autocomplete="email" /></label>
-          <label>Stage<select name="stage">${stageOptions.map(v => `<option value="${esc(v)}">${v ? esc(v) : "—"}</option>`).join("")}</select></label>
-          <label>Status<select name="status">${statusOptions.map(v => `<option value="${esc(v)}">${v ? esc(v) : "—"}</option>`).join("")}</select></label>
-          <label>Last message sent<input name="last_message_sent" placeholder="YYYY-MM-DD or free text" /></label>
-          <label>Next follow-up date<input name="next_follow_up_date" placeholder="YYYY-MM-DD" /></label>
-          <label class="wide">Companies<select name="customerIds" multiple size="8">${cs.map(c => `<option value="${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</option>`).join("")}</select></label>
-          <label class="wide">Notes<textarea name="notes"></textarea></label>
+          <label>Full name<input name="full_name" required value="${esc(draft.full_name || "")}" /></label>
+          <label>First name<input name="first_name" value="${esc(draft.first_name || "")}" /></label>
+          <label>Role / job title<input name="role" value="${esc(draft.role || "")}" /></label>
+          <label>LinkedIn URL<input name="linkedin_url" value="${esc(linkedinUrl)}" /></label>
+          <label>Phone<input name="phone" value="${esc(draft.phone || "")}" inputmode="tel" autocomplete="tel" /></label>
+          <label>Email<input name="email" value="${esc(draft.email || "")}" type="email" autocomplete="email" /></label>
+          <label>Stage<select name="stage">${stageOptions.map(v => `<option value="${esc(v)}" ${v === (draft.stage || "") ? "selected" : ""}>${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Status<select name="status">${statusOptions.map(v => `<option value="${esc(v)}" ${v === (draft.status || "") ? "selected" : ""}>${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Last message sent<input name="last_message_sent" value="${esc(draft.last_message_sent || "")}" placeholder="YYYY-MM-DD or free text" /></label>
+          <label>Next follow-up date<input name="next_follow_up_date" value="${esc(draft.next_follow_up_date || "")}" placeholder="YYYY-MM-DD" /></label>
+          ${companyField}
+          <label class="wide">Notes<textarea name="notes">${esc(notes)}</textarea></label>
         </div>
         <div class="crm-v1-head-actions" style="justify-content:flex-end;margin-top:14px"><button class="btn" type="submit">Save person</button></div>
       </form>
     </section>
-  `, `<a class="btn secondary" href="/employees">Back</a>`);
+  `, `<a class="btn secondary" href="${esc(returnTo)}">Back</a>`);
 
+  return body;
+}
+
+fastify.get("/employees/new", async (req, reply) => {
+  if (!requireAuth(req, reply)) return;
+  const scopedCustomerId = Number(req.query && req.query.customer_id);
+  const scopedCustomer = Number.isFinite(scopedCustomerId) && scopedCustomerId > 0
+    ? db.prepare(`SELECT id,name,business,town FROM customers WHERE id=?`).get(scopedCustomerId)
+    : null;
+  const returnTo = crmSafeReturnPath(req.query && req.query.returnTo, scopedCustomer ? `/customers/${scopedCustomer.id}` : "/customers");
+  const body = renderAddPersonPage(scopedCustomer, returnTo);
+  return reply.type("text/html").send(layout("Add Person", body));
+});
+
+// CRM_LINKEDIN_PERSON_DRAFT_V1
+fastify.post("/employees/new/extract-linkedin", async (req, reply) => {
+  if (!requireAuth(req, reply)) return;
+
+  const fields = {};
+  let image = null;
+  try {
+    for await (const part of req.parts()) {
+      if (part.type === "field") {
+        fields[part.fieldname] = crmSinglePartValue(part.value);
+      } else if (part.type === "file" && part.fieldname === "profile_screenshot" && part.filename) {
+        if (!String(part.mimetype || "").toLowerCase().startsWith("image/")) {
+          await part.toBuffer().catch(() => Buffer.alloc(0));
+          fields._extractError = "Upload a screenshot image file, not a document or other file type.";
+          continue;
+        }
+        image = {
+          mimetype: part.mimetype,
+          buffer: await part.toBuffer()
+        };
+      }
+    }
+  } catch (err) {
+    fields._extractError = "Could not read the uploaded screenshot. Please try a smaller image.";
+  }
+
+  const customerId = Number(fields.customer_id);
+  const scopedCustomer = Number.isFinite(customerId) && customerId > 0
+    ? db.prepare(`SELECT id,name,business,town FROM customers WHERE id=?`).get(customerId)
+    : null;
+  const returnTo = crmSafeReturnPath(fields.returnTo, scopedCustomer ? `/customers/${scopedCustomer.id}` : "/customers");
+  if (!scopedCustomer) {
+    const body = renderAddPersonPage(null, returnTo, {}, "Select a company before extracting a person.");
+    return reply.type("text/html").send(layout("Add Person", body));
+  }
+
+  const linkedinUrl = String(fields.linkedin_url || "").trim();
+  const draft = {
+    linkedin_url: linkedinUrl,
+    stage: "New",
+    notes: linkedinUrl ? `LinkedIn profile: ${linkedinUrl}` : ""
+  };
+  let extractError = String(fields._extractError || "").trim();
+
+  if (image && !extractError) {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+    if (!OPENAI_API_KEY) {
+      extractError = "OpenAI is not configured, so screenshot extraction could not run. The LinkedIn URL has been kept in the draft.";
+    } else {
+      try {
+        const prompt = [
+          "Extract visible CRM person/contact facts from this LinkedIn profile screenshot.",
+          "Do not guess. Leave fields blank if not visible.",
+          "Use only facts visible in the screenshot.",
+          "Return strict JSON only.",
+          "Allowed seniority values: owner, director, manager, operations, admin, unknown.",
+          "Allowed influence_level values: decision_maker, influencer, gatekeeper, unknown."
+        ].join("\n");
+        const schema = {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            full_name: { type: "string" },
+            first_name: { type: "string" },
+            job_title: { type: "string" },
+            company_name_seen: { type: "string" },
+            location: { type: "string" },
+            seniority: { type: "string" },
+            influence_level: { type: "string" },
+            notes: { type: "string" },
+            extraction_confidence: { type: "string" },
+            raw_extracted_text: { type: "string" }
+          },
+          required: ["full_name", "first_name", "job_title", "company_name_seen", "location", "seniority", "influence_level", "notes", "extraction_confidence", "raw_extracted_text"]
+        };
+        const payload = JSON.stringify({
+          model: "gpt-4.1-mini",
+          input: [{
+            role: "user",
+            content: [
+              { type: "input_text", text: prompt },
+              { type: "input_image", image_url: `data:${image.mimetype};base64,${image.buffer.toString("base64")}` }
+            ]
+          }],
+          text: {
+            format: {
+              type: "json_schema",
+              name: "linkedin_person_visible_facts",
+              strict: true,
+              schema
+            }
+          }
+        });
+
+        const https = require("https");
+        const aiRaw = await new Promise((resolve, reject) => {
+          const req2 = https.request({
+            method: "POST",
+            hostname: "api.openai.com",
+            path: "/v1/responses",
+            headers: {
+              "Authorization": "Bearer " + OPENAI_API_KEY,
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(payload)
+            }
+          }, (res) => {
+            let data = "";
+            res.on("data", c => data += c);
+            res.on("end", () => {
+              if (res.statusCode >= 400) return reject(new Error("OpenAI " + res.statusCode + ": " + data.slice(0, 500)));
+              resolve(data);
+            });
+          });
+          req2.on("error", reject);
+          req2.setTimeout(30000, () => req2.destroy(new Error("OpenAI timeout")));
+          req2.write(payload);
+          req2.end();
+        });
+
+        const parsed = JSON.parse(aiRaw);
+        let outputText = String(parsed.output_text || "").trim();
+        if (!outputText && Array.isArray(parsed.output)) {
+          for (const item of parsed.output) {
+            for (const c of (item.content || [])) {
+              if (c.type === "output_text" && c.text) {
+                outputText = String(c.text).trim();
+                break;
+              }
+            }
+            if (outputText) break;
+          }
+        }
+        if (!outputText) throw new Error("OpenAI returned no extraction text");
+
+        const extracted = JSON.parse(outputText);
+        draft.full_name = String(extracted.full_name || "").trim();
+        draft.first_name = String(extracted.first_name || "").trim();
+        draft.role = String(extracted.job_title || "").trim();
+        const noteLines = [
+          linkedinUrl ? `LinkedIn profile: ${linkedinUrl}` : "",
+          "LinkedIn screenshot extraction draft:",
+          extracted.company_name_seen ? `Company seen: ${String(extracted.company_name_seen).trim()}` : "",
+          extracted.location ? `Location: ${String(extracted.location).trim()}` : "",
+          extracted.seniority ? `Seniority: ${String(extracted.seniority).trim()}` : "",
+          extracted.influence_level ? `Influence level: ${String(extracted.influence_level).trim()}` : "",
+          extracted.extraction_confidence ? `Extraction confidence: ${String(extracted.extraction_confidence).trim()}` : "",
+          extracted.notes ? `Notes: ${String(extracted.notes).trim()}` : "",
+          extracted.raw_extracted_text ? `Raw extracted text: ${String(extracted.raw_extracted_text).trim()}` : ""
+        ].filter(Boolean);
+        draft.notes = noteLines.join("\n");
+      } catch (err) {
+        extractError = "LinkedIn screenshot extraction failed. The URL has been kept and you can still complete the form manually.";
+        console.error("LinkedIn extraction failed:", err);
+      }
+    }
+  }
+
+  const body = renderAddPersonPage(scopedCustomer, returnTo, draft, extractError);
   return reply.type("text/html").send(layout("Add Person", body));
 });
 
@@ -2890,7 +3325,19 @@ fastify.post("/employees/new", async (req, reply) => {
   if (!requireAuth(req, reply)) return;
   const b = req.body || {};
   const full_name = String(b.full_name || "").trim();
-  if (!full_name) return reply.redirect("/employees/new");
+  const idsRaw = b.customerIds || b.customer_ids;
+  const ids = Array.isArray(idsRaw) ? idsRaw : (idsRaw ? [idsRaw] : []);
+  const firstCustomerId = Number(ids[0]);
+  const returnTo = crmSafeReturnPath(b.returnTo, "/employees");
+  if (!Number.isFinite(firstCustomerId) || firstCustomerId <= 0) {
+    return reply.redirect("/customers");
+  }
+  if (!full_name) {
+    const scopedQuery = Number.isFinite(firstCustomerId) && firstCustomerId > 0
+      ? `?customer_id=${encodeURIComponent(firstCustomerId)}&returnTo=${encodeURIComponent(returnTo)}`
+      : "";
+    return reply.redirect(`/employees/new${scopedQuery}`);
+  }
 
   const info = db.prepare(
     `INSERT INTO employees
@@ -2913,8 +3360,6 @@ fastify.post("/employees/new", async (req, reply) => {
 
   const employeeId = info.lastInsertRowid;
 
-  const idsRaw = b.customerIds;
-  const ids = Array.isArray(idsRaw) ? idsRaw : (idsRaw ? [idsRaw] : []);
   for (const id of ids) {
     const cid = Number(id);
     if (Number.isFinite(cid)) {
@@ -2922,7 +3367,7 @@ fastify.post("/employees/new", async (req, reply) => {
     }
   }
 
-  return reply.redirect(`/employees/${employeeId}`);
+  return reply.redirect(returnTo);
 });
 
 fastify.get("/employees/:id", async (req, reply) => {
@@ -2932,6 +3377,7 @@ fastify.get("/employees/:id", async (req, reply) => {
   if (!e) return reply.code(404).type("text/html").send(layout("Not found", `<div class="card">Not found</div>`));
 
   const links = employeeCustomerLinks(id);
+  const backHref = crmSafeReturnPath(req.query && req.query.returnTo, "/employees");
   const lastEmail = db.prepare("SELECT type, note, email_body, email_subject, email_from, email_to, at FROM touchpoints WHERE employeeId=? AND type IN ('email_out','email_in') ORDER BY at DESC LIMIT 1").get(id);
   const body = renderPeopleShell(e.full_name, e.role || "CRM person/contact", `
     <div class="people-grid">
@@ -2952,7 +3398,7 @@ fastify.get("/employees/:id", async (req, reply) => {
         <section class="crm-v1-surface">
           <div class="people-label">Linked companies</div>
           <div class="crm-v1-head-actions" style="margin-top:10px">
-            ${links.length === 0 ? `<span class="muted">None yet</span>` : links.map(c => `<a class="crm-v1-chip" href="/customers/${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</a>`).join("")}
+            ${links.length === 0 ? `<span class="muted">None yet</span>` : links.map(c => `<a class="crm-v1-chip" href="/customers/${c.id}?returnTo=${encodeURIComponent(`/employees/${e.id}?returnTo=${encodeURIComponent(backHref)}`)}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</a>`).join("")}
           </div>
         </section>
         <section class="crm-v1-surface">
@@ -2967,8 +3413,8 @@ fastify.get("/employees/:id", async (req, reply) => {
       </aside>
     </div>
   `, `
-    <a class="btn secondary" href="/employees">Back</a>
-    <a class="btn secondary" href="/employees/${e.id}/edit">Edit</a>
+    <a class="btn secondary" href="${esc(backHref)}">Back</a>
+    <a class="btn secondary" href="/employees/${e.id}/edit?returnTo=${encodeURIComponent(backHref)}">Edit</a>
     ${e.linkedin_url ? `<a class="btn secondary" href="${esc(e.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ""}
     ${e.phone ? `<a class="btn secondary" href="tel:${esc(e.phone)}">Call</a>` : ""}
     ${e.email ? `<a class="btn secondary" href="mailto:${esc(e.email)}">Email</a>` : ""}
@@ -2984,6 +3430,7 @@ fastify.get("/employees/:id/edit", async (req, reply) => {
   const e = db.prepare(`SELECT * FROM employees WHERE id=?`).get(id);
   if (!e) return reply.code(404).type("text/html").send(layout("Not found", `<div class="card">Not found</div>`));
 
+  const returnTo = crmSafeReturnPath(req.query && req.query.returnTo, "/employees");
   const links = employeeCustomerLinks(id).map(x => x.id);
   const cs = allCustomersForPicklist();
 
@@ -2992,6 +3439,7 @@ fastify.get("/employees/:id/edit", async (req, reply) => {
   const body = renderPeopleShell("Edit Person", e.full_name || "Update CRM person/contact details.", `
     <section class="crm-v1-surface">
       <form class="people-form" method="post" action="/employees/${e.id}/edit">
+        <input type="hidden" name="returnTo" value="${esc(returnTo)}" />
         <div class="people-form-grid">
           <label>Full name<input name="full_name" required value="${esc(e.full_name)}" /></label>
           <label>First name<input name="first_name" value="${esc(e.first_name || "")}" /></label>
@@ -3016,7 +3464,7 @@ fastify.get("/employees/:id/edit", async (req, reply) => {
       </form>
     </section>
   `, `
-    <a class="btn secondary" href="/employees/${e.id}">Back</a>
+    <a class="btn secondary" href="/employees/${e.id}?returnTo=${encodeURIComponent(returnTo)}">Back</a>
     <form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin:0"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
   `);
 
@@ -3032,6 +3480,7 @@ fastify.post("/employees/:id/edit", async (req, reply) => {
   const b = req.body || {};
   const full_name = String(b.full_name || "").trim();
   if (!full_name) return reply.redirect(`/employees/${id}/edit`);
+  const returnTo = crmSafeReturnPath(b.returnTo, "/employees");
 
   db.prepare(
     `UPDATE employees
@@ -3065,7 +3514,7 @@ fastify.post("/employees/:id/edit", async (req, reply) => {
     }
   }
 
-  return reply.redirect(`/employees/${id}`);
+  return reply.redirect(`/employees/${id}?returnTo=${encodeURIComponent(returnTo)}`);
 });
 
 fastify.post("/employees/:id/delete", async (req, reply) => {
@@ -3086,15 +3535,52 @@ fastify.get('/customers/:id/email/ai', async (req, reply) => {
     const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
     if (!customer) return reply.code(404).send('Customer not found');
 
+    const renderAiEmailPage = (inner) => `
+      <style>
+        /* CRM_AI_EMAIL_ECOSYSTEM_STYLE_V1 */
+        .top{display:none}
+        .wrap{max-width:none!important;margin:0!important;padding:0!important}
+        .crm-v1-shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0;align-items:start;min-height:100vh;background:radial-gradient(circle at top left,#172942 0,#07111f 36%,#050a12 100%)}
+        .crm-v1-main{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
+        .crm-v1-header,.crm-v1-surface{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+        .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.crm-v1-hero{max-width:860px}.crm-v1-eyebrow{display:inline-flex;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}.crm-v1-head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+        .ai-email-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px}.ai-email-kv{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}.ai-email-kv span{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.ai-email-kv strong{display:block;margin-top:5px;color:#f4f7fb;overflow-wrap:anywhere}
+        .ai-email-draft{white-space:pre-wrap;margin:14px 0 0;border:1px solid rgba(255,255,255,.08);background:#07111f;padding:16px;border-radius:14px;color:#f4f7fb;font:inherit;line-height:1.55;overflow-wrap:anywhere}.ai-email-evidence{margin:14px 0 0;padding-left:20px;color:#d8e2f1;line-height:1.45}.ai-email-evidence li{margin:6px 0}.crm-v1-surface a{color:#7cc4ff}.muted{color:#98a7bb}
+        @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-header-top{display:grid}}
+      </style>
+      <div class="crm-v1-shell">
+        ${hubSidebar("crm-customers")}
+        <main class="crm-v1-main">
+          <section class="crm-v1-header">
+            <div class="crm-v1-header-top">
+              <div class="crm-v1-hero">
+                <div class="crm-v1-eyebrow">Frontline AI Hub</div>
+                <h1>AI Email Draft</h1>
+                <p>Draft preview only. Nothing has been sent.</p>
+                <div class="ai-email-meta">
+                  <div class="ai-email-kv"><span>Customer</span><strong>${esc(customer.business || customer.name || ('#' + customer.id))}</strong></div>
+                  <div class="ai-email-kv"><span>Industry</span><strong>${esc(customer.lead_industry || '—')}</strong></div>
+                  <div class="ai-email-kv"><span>Status</span><strong>${esc(targetStatusLabel(customer.target_status || ''))}</strong></div>
+                </div>
+              </div>
+              <div class="crm-v1-head-actions">
+                <a class="btn secondary" href="/customers/${customer.id}">Back</a>
+              </div>
+            </div>
+          </section>
+          ${inner}
+        </main>
+      </div>
+    `;
+
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
     if (!OPENAI_API_KEY) {
-      const body = `
-        <div class="card">
-          <h2 style="margin:0 0 8px 0">AI Email Draft</h2>
-          <div class="muted">Customer: ${esc(customer.business || customer.name || ('#' + customer.id))}</div>
-          <div style="margin-top:10px">Missing <code>OPENAI_API_KEY</code> env var. No draft was generated.</div>
-          <div style="margin-top:12px"><a class="btn secondary" href="/customers/${customer.id}">Back</a></div>
-        </div>`;
+      const body = renderAiEmailPage(`
+        <section class="crm-v1-surface">
+          <h2 style="margin:0 0 8px;color:#f4f7fb">OpenAI not configured</h2>
+          <div class="muted">Missing <code>OPENAI_API_KEY</code> env var. No draft was generated.</div>
+        </section>
+      `);
       return reply.type("text/html").send(layout("AI Email Draft", body));
     }
 
@@ -3232,25 +3718,20 @@ fastify.get('/customers/:id/email/ai', async (req, reply) => {
       return reply.send({ ok: true, customerId: customer.id, subject, body: draftBody, evidence_used: evidence, to });
     }
 
-    const body = `
-      <div class="card" style="margin-bottom:12px">
-        <h2 style="margin:0 0 8px 0">AI Email Draft</h2>
-        <div class="muted">Draft preview only. Nothing has been sent.</div>
-        <div class="muted" style="margin-top:6px">Customer: ${esc(customer.business || customer.name || ('#' + customer.id))}</div>
-        <div class="muted">Industry: ${esc(customer.lead_industry || '—')} • Status: ${esc(targetStatusLabel(customer.target_status || ''))}</div>
-        <div style="margin-top:12px"><a class="btn secondary" href="/customers/${customer.id}">Back</a></div>
-      </div>
-      <div class="card">
-        <div><b>To</b> ${to ? `<a href="mailto:${esc(to)}">${esc(to)}</a>` : '<span class="muted">No email saved yet</span>'}</div>
-        <div style="margin-top:8px"><b>Subject</b> ${esc(subject)}</div>
-        <pre style="white-space:pre-wrap;margin:12px 0 0 0;border:1px solid var(--line);background:#0e1522;padding:14px;border-radius:14px">${esc(draftBody)}</pre>
-        ${evidence.length ? `<div style="margin-top:14px"><b>Evidence used</b><ul>${evidence.map(v => `<li>${esc(v)}</li>`).join('')}</ul></div>` : ''}
-        <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    const body = renderAiEmailPage(`
+      <section class="crm-v1-surface">
+        <div class="ai-email-meta" style="margin-top:0">
+          <div class="ai-email-kv"><span>To</span><strong>${to ? `<a href="mailto:${esc(to)}">${esc(to)}</a>` : 'No email saved yet'}</strong></div>
+          <div class="ai-email-kv"><span>Subject</span><strong>${esc(subject)}</strong></div>
+        </div>
+        <pre class="ai-email-draft">${esc(draftBody)}</pre>
+        ${evidence.length ? `<div style="margin-top:16px"><h2 style="margin:0 0 8px;color:#f4f7fb;font-size:18px">Evidence used</h2><ul class="ai-email-evidence">${evidence.map(v => `<li>${esc(v)}</li>`).join('')}</ul></div>` : ''}
+        <div class="crm-v1-head-actions" style="margin-top:18px;justify-content:flex-end">
           ${mailto ? `<a class="btn" href="${esc(mailto)}">Open mailto draft</a>` : ''}
           <button class="btn secondary" type="button" onclick="copyDraft()">Copy draft</button>
         </div>
         <textarea id="ai_email_copy" style="position:absolute;left:-9999px;top:-9999px">${esc(`Subject: ${subject}\n\n${draftBody}`)}</textarea>
-      </div>
+      </section>
       <script>
         async function copyDraft(){
           var el = document.getElementById('ai_email_copy');
@@ -3264,7 +3745,7 @@ fastify.get('/customers/:id/email/ai', async (req, reply) => {
             alert('Copied');
           }
         }
-      </script>`;
+      </script>`);
 
     return reply.type("text/html").send(layout("AI Email Draft", body));
   } catch (err) {
