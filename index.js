@@ -1730,7 +1730,7 @@ fastify.get("/targets", async (req, reply) => {
 
   const filterLinks = TARGET_STATUSES.map(s => {
     const active = validStatus === s ? " active" : "";
-    return `<a class="target-filter${active}" href="/targets?status=${encodeURIComponent(s)}">${esc(targetStatusLabel(s))}</a>`;
+    return `<a class="${active.trim()}" href="/targets?status=${encodeURIComponent(s)}">${esc(targetStatusLabel(s))}</a>`;
   }).join("");
   const currentTargetsReturn = `/targets${req.url && String(req.url).includes("?") ? "?" + String(req.url).split("?").slice(1).join("?") : ""}`;
 
@@ -1739,67 +1739,62 @@ fastify.get("/targets", async (req, reply) => {
     /* CRM_TARGETS_STYLE_ALIGNMENT_V1 | CRM_TARGETS_COLOUR_MATCH_EXPLICIT_V1 */
     .top{display:none}
     .wrap{max-width:none!important;margin:0!important;padding:0!important}
-    .target-shell{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
-    .target-header,.target-card{border:1px solid rgba(224,236,255,.16);border-radius:20px;padding:18px;background:radial-gradient(circle at top right, rgba(255,255,255,.24), transparent 30%),linear-gradient(180deg, rgba(40,66,118,.46), rgba(24,42,82,.32));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-    .target-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
-    .target-title{font-size:36px;font-weight:900;color:#f8fbff;letter-spacing:-.04em}
-    .target-sub{color:rgba(226,235,255,.72);margin-top:6px;font-size:15px;line-height:1.5}
-    .target-nav{display:flex;gap:10px;flex-wrap:wrap}
-    .target-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:18px}
-    .target-kpi{border:1px solid rgba(224,236,255,.14);border-radius:18px;padding:14px;background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025))}
-    .target-kpi b{display:block;font-size:32px;line-height:1;font-weight:900;letter-spacing:-.05em;color:#f8fbff}.target-kpi span{display:block;margin-top:8px;color:rgba(226,235,255,.58);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-    .target-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-    .target-filter{display:inline-flex;align-items:center;padding:9px 12px;border-radius:999px;border:1px solid rgba(224,236,255,.14);background:rgba(255,255,255,.035);color:#e2ebff;font-weight:800;font-size:13px}
-    .target-filter.active{background:linear-gradient(135deg,rgba(216,173,76,.26),rgba(216,173,76,.10));border-color:rgba(216,173,76,.50);color:#fff7d6}
-    .target-table{width:100%;border-collapse:separate;border-spacing:0 8px}.target-table th,.target-table td{padding:12px 10px;text-align:left;vertical-align:top}.target-table th{color:rgba(226,235,255,.58);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.target-table td{color:#e2ebff}.target-table a{color:#a7d8ff}.target-main-row td{background:rgba(10,20,36,.62);border-top:1px solid rgba(224,236,255,.12);border-bottom:1px solid rgba(224,236,255,.12)}.target-main-row td:first-child{border-left:1px solid rgba(224,236,255,.12);border-radius:14px 0 0 14px}.target-main-row td:last-child{border-right:1px solid rgba(224,236,255,.12);border-radius:0 14px 14px 0}.target-detail-row td{padding:0 10px 14px}.target-detail-panel{border:1px solid rgba(224,236,255,.13);border-radius:14px;background:rgba(7,17,31,.72);padding:12px;margin-top:-8px}
-    .target-status-form{display:grid;grid-template-columns:1fr 1fr minmax(220px,1.5fr) auto;gap:10px;align-items:end}.target-status-form label{margin:0;color:rgba(226,235,255,.58);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.target-status-form input,.target-status-form select{min-height:42px;margin-top:6px;background:#07111f;color:#f4f7fb;border:1px solid rgba(224,236,255,.14);border-radius:12px}.target-archive-form{margin-top:10px;text-align:right}.target-empty td{padding:24px 18px;border:1px dashed rgba(216,173,76,.50);border-radius:14px;color:rgba(226,235,255,.62);background:rgba(216,173,76,.10);text-align:center}
-    @media(max-width:900px){.target-shell{padding:18px}.target-kpis{grid-template-columns:1fr 1fr}.target-table{display:block;overflow:auto}.target-status-form{grid-template-columns:1fr}.target-main-row td:first-child,.target-main-row td:last-child{border-radius:0}}
+    .crm-v1-shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0;align-items:start;min-height:100vh;background:radial-gradient(circle at top left,#172942 0,#07111f 36%,#050a12 100%)}
+    .crm-v1-main{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
+    .crm-v1-header{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 16px 50px rgba(0,0,0,.22)}
+    .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+    .crm-v1-hero{max-width:760px}.crm-v1-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:0;border-radius:999px;border:0;background:transparent;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+    .crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}
+    .crm-v1-head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .crm-v1-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:18px}.crm-v1-stat{background:rgba(255,255,255,.04);color:#f4f7fb;border-radius:18px;padding:14px;border:1px solid rgba(255,255,255,.09);box-shadow:none}.crm-v1-stat-k{font-size:32px;line-height:1;font-weight:900;letter-spacing:-.05em;color:#f4f7fb}.crm-v1-stat-l{margin-top:8px;font-size:13px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em}
+    .crm-v1-surface{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));color:#f4f7fb;border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 16px 50px rgba(0,0,0,.22)}
+    .crm-v1-towns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.crm-v1-towns a{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#e8f0ff;font-weight:700;font-size:13px}.crm-v1-towns a.active{background:linear-gradient(135deg,rgba(216,173,76,.16),rgba(216,173,76,.06));border-color:rgba(216,173,76,.45);color:#fff7d6}
+    .crm-v1-list{display:grid;gap:12px;margin-top:16px}.crm-v1-row{display:grid;grid-template-columns:minmax(0,1.35fr) 110px 130px minmax(0,1fr) minmax(0,1fr) 130px auto;gap:12px;align-items:center;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);color:#d8e2f1;box-shadow:none}.crm-v1-name{font-size:18px;font-weight:800;line-height:1.1;color:#f4f7fb}.crm-v1-meta{margin-top:5px;color:#9aa8bd;font-size:13px}.crm-v1-badge{display:inline-flex;align-items:center;justify-content:center;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#d8e2f1;font-size:12px;font-weight:800}.crm-v1-row a{color:#7cc4ff;font-weight:700}
+    .crm-v1-empty{padding:28px 18px;border-radius:14px;border:1px dashed rgba(216,173,76,.35);color:#9aa8bd;background:rgba(216,173,76,.06);text-align:center}
+    .target-detail-panel{border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025);padding:12px}.target-status-form{display:grid;grid-template-columns:1fr 1fr minmax(220px,1.5fr) auto;gap:10px;align-items:end}.target-status-form label{margin:0;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.target-status-form input,.target-status-form select{min-height:42px;margin-top:6px;background:#07111f;color:#f4f7fb;border:1px solid rgba(255,255,255,.09);border-radius:12px}.target-archive-form{margin-top:10px;text-align:right}
+    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-v1-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.crm-v1-row{grid-template-columns:1fr 1fr}}
+    @media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-stats,.crm-v1-row,.target-status-form{grid-template-columns:1fr}}
   </style>
-  <div class="hub-ecosystem-layout">
+  <div class="crm-v1-shell">
     ${hubSidebar("crm-targets")}
-    <div class="target-shell">
-      <section class="target-header">
-      <div class="target-top">
-        <div>
-          <div class="target-title">Target Pipeline</div>
-          <div class="target-sub">Lead Engine targets inside the existing CRM customer table.</div>
+    <main class="crm-v1-main">
+      <section class="crm-v1-header">
+      <div class="crm-v1-header-top">
+        <div class="crm-v1-hero">
+          <div class="crm-v1-eyebrow">Frontline AI Hub</div>
+          <h1>Target Pipeline</h1>
+          <p>Lead Engine targets inside the existing CRM customer table.</p>
         </div>
-        <div class="target-nav">
+        <div class="crm-v1-head-actions">
           <a class="btn secondary" href="/customers">Customers</a>
-          <a class="btn secondary" href="/customers/328?returnTo=${encodeURIComponent(currentTargetsReturn)}">Test record #328</a>
         </div>
       </div>
-      <div class="target-kpis">
-        <div class="target-kpi"><b>${esc(String(stat("new_target")))}</b><span>New targets</span></div>
-        <div class="target-kpi"><b>${esc(String(stat("ready_to_contact")))}</b><span>Ready to contact</span></div>
-        <div class="target-kpi"><b>${esc(String(stat("email_sent")))}</b><span>Email sent</span></div>
-        <div class="target-kpi"><b>${esc(String(stat("replied")))}</b><span>Replied</span></div>
-        <div class="target-kpi"><b>${esc(String(followDue))}</b><span>Follow-up due</span></div>
+      <div class="crm-v1-stats">
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stat("new_target")))}</div><div class="crm-v1-stat-l">New targets</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stat("ready_to_contact")))}</div><div class="crm-v1-stat-l">Ready to contact</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stat("email_sent")))}</div><div class="crm-v1-stat-l">Email sent</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stat("replied")))}</div><div class="crm-v1-stat-l">Replied</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(followDue))}</div><div class="crm-v1-stat-l">Follow-up due</div></div>
       </div>
       </section>
-      <section class="target-card">
-      <div class="target-filters">
-        <a class="target-filter${validStatus || due ? "" : " active"}" href="/targets">All targets</a>
-        <a class="target-filter${due === "today" ? " active" : ""}" href="/targets?due=today">Today / Overdue</a>
+      <section class="crm-v1-surface">
+      <div class="crm-v1-towns">
+        <a class="${validStatus || due ? "" : "active"}" href="/targets">All targets</a>
+        <a class="${due === "today" ? "active" : ""}" href="/targets?due=today">Today / Overdue</a>
         ${filterLinks}
       </div>
-      <table class="target-table">
-        <thead><tr><th>Business</th><th>Town</th><th>Industry</th><th>Email</th><th>Phone</th><th>Target status</th><th>Next follow-up</th><th>Open record</th></tr></thead>
-        <tbody>
+      <div class="crm-v1-list">
           ${rows.map(r => `
-            <tr class="target-main-row">
-              <td><b>${esc(r.business || r.name)}</b><div class="muted">${esc(r.name || "")}</div></td>
-              <td>${esc(r.town || "—")}</td>
-              <td>${esc(r.lead_industry || "—")}</td>
-              <td>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : "—"}</td>
-              <td>${r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : "—"}</td>
-              <td>${esc(targetStatusLabel(r.target_status || "new_target"))}</td>
-              <td>${esc(r.next_follow_up_at || "—")}</td>
-              <td><a class="btn secondary" href="/customers/${r.id}?returnTo=${encodeURIComponent(currentTargetsReturn)}">Open</a></td>
-            </tr>
-            <tr class="target-detail-row">
-              <td colspan="8">
-                <div class="target-detail-panel">
+            <div class="crm-v1-row">
+              <div><div class="crm-v1-name">${esc(r.business || r.name)}</div><div class="crm-v1-meta">${esc(r.name || "")}</div></div>
+              <div class="crm-v1-badge">${esc(r.town || "—")}</div>
+              <div class="crm-v1-badge">${esc(r.lead_industry || "—")}</div>
+              <div>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : `<span class="crm-v1-meta">No email</span>`}</div>
+              <div>${r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : `<span class="crm-v1-meta">No phone</span>`}</div>
+              <div><div class="crm-v1-badge">${esc(targetStatusLabel(r.target_status || "new_target"))}</div><div class="crm-v1-meta">${esc(r.next_follow_up_at || "No follow-up")}</div></div>
+              <a class="btn secondary" href="/customers/${r.id}?returnTo=${encodeURIComponent(currentTargetsReturn)}">Open</a>
+            </div>
+            <div class="target-detail-panel">
                 <form class="target-status-form" method="POST" action="/targets/${r.id}/status">
                   <label>Status<select name="target_status">${TARGET_STATUSES.map(s => `<option value="${esc(s)}" ${s === (r.target_status || "new_target") ? "selected" : ""}>${esc(targetStatusLabel(s))}</option>`).join("")}</select></label>
                   <label>Next follow-up<input name="next_follow_up_at" value="${esc(r.next_follow_up_at || "")}" placeholder="YYYY-MM-DD"></label>
@@ -1809,14 +1804,11 @@ fastify.get("/targets", async (req, reply) => {
                 <form class="target-archive-form" method="POST" action="/targets/${r.id}/archive" onsubmit="return confirm('Remove this record from Targets? The customer record will be kept.');">
                   <button class="btn secondary" type="submit">Remove from targets</button>
                 </form>
-                </div>
-              </td>
-            </tr>
-          `).join("") || `<tr class="target-empty"><td colspan="8">No targets found.</td></tr>`}
-        </tbody>
-      </table>
+            </div>
+          `).join("") || `<div class="crm-v1-empty">No targets found.</div>`}
+      </div>
       </section>
-    </div>
+    </main>
   </div>`;
 
   return reply.type("text/html").send(layout("Target Pipeline", body));
