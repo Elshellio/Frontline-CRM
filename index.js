@@ -1766,7 +1766,7 @@ fastify.get("/targets", async (req, reply) => {
         </div>
         <div class="target-nav">
           <a class="btn secondary" href="/customers">Customers</a>
-          <a class="btn secondary" href="/customers/328">Test record #328</a>
+          <a class="btn secondary" href="/customers/328?returnTo=${encodeURIComponent(currentTargetsReturn)}">Test record #328</a>
         </div>
       </div>
       <div class="target-kpis">
