@@ -140,6 +140,7 @@ function ecosystemMenu(active = "crm-targets", itemClass = "", activeClass = "ac
     ["lead-engine", "🎯 Lead Engine", "https://hub.frontline-ai.co.uk/lead-engine"],
     ["crm-targets", "🗄️ CRM / Targets", "/crm/targets"],
     ["crm-customers", "👥 CRM / Customers", "/crm/customers"],
+    ["crm-people", "👤 CRM / People", "/crm/employees"],
   ];
   return items.map(([key, label, href]) => {
     const cls = [itemClass, key === active ? activeClass : ""].filter(Boolean).join(" ");
@@ -159,6 +160,40 @@ function hubSidebar(active = "crm-targets") {
       </nav>
     </aside>
   `;
+}
+
+function renderPeopleShell(title, subtitle, inner, actions = "") {
+  return `
+  <style>
+    /* CRM_PEOPLE_UI_ALIGNMENT_V1 */
+    .top{display:none}
+    .wrap{max-width:none!important;margin:0!important;padding:0!important}
+    .crm-v1-shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0;align-items:start;min-height:100vh;background:radial-gradient(circle at top left,#172942 0,#07111f 36%,#050a12 100%)}
+    .crm-v1-main{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
+    .crm-v1-header,.crm-v1-surface{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.crm-v1-hero{max-width:780px}.crm-v1-eyebrow{display:inline-flex;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}.crm-v1-head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .crm-v1-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}.crm-v1-stat{background:rgba(255,255,255,.04);color:#f4f7fb;border-radius:18px;padding:14px;border:1px solid rgba(255,255,255,.09)}.crm-v1-stat-k{font-size:32px;line-height:1;font-weight:900;letter-spacing:-.05em;color:#f4f7fb}.crm-v1-stat-l{margin-top:8px;font-size:13px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em}
+    .crm-v1-filterbar{display:grid;grid-template-columns:1fr auto;gap:12px;margin-top:16px;align-items:end}.crm-v1-filterbar label,.people-form label{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px}.crm-v1-filterbar input,.people-form input,.people-form textarea,.people-form select{background:#07111f!important;color:#f4f7fb!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:12px!important;padding:12px!important;width:100%}
+    .crm-v1-list{display:grid;gap:12px;margin-top:16px}.crm-v1-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(120px,.7fr) minmax(120px,.7fr) minmax(120px,.7fr) 120px auto;gap:12px;align-items:center;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);color:#d8e2f1}.crm-v1-name{font-size:18px;font-weight:800;line-height:1.1;color:#f4f7fb}.crm-v1-meta{margin-top:5px;color:#9aa8bd;font-size:13px}.crm-v1-badge,.crm-v1-chip{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#d8e2f1;font-size:12px;font-weight:800}.crm-v1-row a,.crm-v1-surface a{color:#7cc4ff;font-weight:700}.crm-v1-empty{padding:28px 18px;border-radius:14px;border:1px dashed rgba(216,173,76,.35);color:#9aa8bd;background:rgba(216,173,76,.06);text-align:center}
+    .people-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}.people-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.people-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.people-label{color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.people-value{margin-top:6px;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.people-note{white-space:pre-wrap;line-height:1.55;color:#d8e2f1}.people-form{max-width:920px}.people-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.people-form .wide{grid-column:1/-1}
+    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-v1-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.people-grid{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-stats,.crm-v1-row,.crm-v1-filterbar,.people-form-grid{grid-template-columns:1fr}}
+  </style>
+  <div class="crm-v1-shell">
+    ${hubSidebar("crm-people")}
+    <main class="crm-v1-main">
+      <section class="crm-v1-header">
+        <div class="crm-v1-header-top">
+          <div class="crm-v1-hero">
+            <div class="crm-v1-eyebrow">Frontline AI Hub</div>
+            <h1>${esc(title)}</h1>
+            <p>${esc(subtitle || "")}</p>
+          </div>
+          <div class="crm-v1-head-actions">${actions || ""}</div>
+        </div>
+      </section>
+      ${inner}
+    </main>
+  </div>`;
 }
 
 // CRM_LEAD_ENGINE_IMPORT_V1
@@ -646,7 +681,7 @@ td{
         showLogout
           ? `<div class="row" style="justify-content:flex-end">
                <a class="btn secondary" href="/customers">Customers</a>
-               <a class="btn secondary" href="/employees">Employees</a>
+               <a class="btn secondary" href="/employees">People</a>
                <a class="btn secondary" href="/outbound/openers">Openers</a>
                <a class="btn secondary" href="/customers/import">Bulk upload</a>
                <form method="post" action="/logout" style="margin:0">
@@ -1551,7 +1586,7 @@ fastify.get("/customers", async (req, reply) => {
           </div>
           <div class="crm-v1-stat">
             <div class="crm-v1-stat-k">${esc(String(stats.withEmployees))}</div>
-            <div class="crm-v1-stat-l">With linked employees</div>
+            <div class="crm-v1-stat-l">With linked people</div>
           </div>
           <div class="crm-v1-stat">
             <div class="crm-v1-stat-k">${esc(String(stats.needsAttention))}</div>
@@ -1603,7 +1638,7 @@ fastify.get("/customers", async (req, reply) => {
                     <div class="crm-v1-badge">${esc(r.town || "—")}</div>
                   </div>
                   <div>
-                    <div class="crm-v1-badge">${esc(String(r.employee_count || 0))} employees</div>
+                    <div class="crm-v1-badge">${esc(String(r.employee_count || 0))} people</div>
                   </div>
                   <div>
                     <div style="font-weight:800;color:#17346f">${email ? esc(email) : "No email saved"}</div>
@@ -1655,11 +1690,11 @@ fastify.get("/customers", async (req, reply) => {
                   <div class="crm-v1-kv-value">${selectedFresh.tags ? `<div class="crm-v1-chiprow">${selectedFresh.tags.split(/\s+/).filter(Boolean).map(t => `<span class="crm-v1-chip">${esc(t)}</span>`).join("")}</div>` : `<span class="muted">No tags yet</span>`}</div>
                 </div>
                 <div class="crm-v1-kv-item">
-                  <div class="crm-v1-kv-label">Linked employees</div>
+                  <div class="crm-v1-kv-label">People</div>
                   <div class="crm-v1-kv-value">
                     ${selectedEmployees.length
                       ? `<div class="crm-v1-chiprow">${selectedEmployees.map(e => `<a class="crm-v1-chip" href="/employees/${e.id}">${esc(e.full_name)}${e.role ? ` • ${esc(e.role)}` : ""}</a>`).join("")}</div>`
-                      : `<span class="muted">No linked employees yet</span>`}
+                      : `<span class="muted">No linked people yet</span>`}
                   </div>
                 </div>
                 <div class="crm-v1-kv-item">
@@ -1887,7 +1922,7 @@ function customerForm(title, action, c = {}) {
           <input name="website" value="${esc(c.website)}" placeholder="https://..." />
           <label>Tags</label>
           <input name="tags" value="${esc(c.tags)}" placeholder="space separated e.g. live demo-booked" />
-          <label>Employees</label>
+          <label>People</label>
           <textarea name="employees" placeholder="One per line. Name | Role | LinkedIn | Stage | Status | Last msg | Next follow-up | Notes">${esc(c.employees)}</textarea>
           <label>Notes</label>
           <textarea name="notes">${esc(c.notes)}</textarea>
@@ -1948,19 +1983,20 @@ fastify.get("/customers/:id", async (req, reply) => {
   const allEmployees = allEmployeesForPicklist();
   const isTarget = isTargetCustomer(c);
   const backHref = crmSafeReturnPath(req.query && req.query.returnTo, "/customers");
+  const detailNavActive = backHref.startsWith("/targets") ? "crm-targets" : "crm-customers";
   const targetPanel = isTarget ? `
-        <div class="card glass">
-          <div class="muted" style="font-size:11px">TARGET PIPELINE</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px">
-            <div><div class="muted" style="font-size:11px">Target status</div><div style="font-weight:700">${esc(targetStatusLabel(c.target_status || "new_target"))}</div></div>
-            <div><div class="muted" style="font-size:11px">Outreach status</div><div style="font-weight:700">${esc(c.outreach_status || "not_contacted")}</div></div>
-            <div><div class="muted" style="font-size:11px">Lead source</div><div style="font-weight:700">${esc(c.lead_source || "—")}</div></div>
-            <div><div class="muted" style="font-size:11px">Industry</div><div style="font-weight:700">${esc(c.lead_industry || "—")}</div></div>
-            <div><div class="muted" style="font-size:11px">Last contacted</div><div style="font-weight:700">${esc(c.last_contacted_at || "—")}</div></div>
-            <div><div class="muted" style="font-size:11px">Next follow-up</div><div style="font-weight:700">${esc(c.next_follow_up_at || "—")}</div></div>
-            <div><div class="muted" style="font-size:11px">Replied at</div><div style="font-weight:700">${esc(c.replied_at || "—")}</div></div>
+        <div class="crm-detail-kv-item crm-detail-wide">
+          <div class="crm-detail-label">Target pipeline</div>
+          <div class="crm-detail-kv-grid">
+            <div><span>Target status</span><strong>${esc(targetStatusLabel(c.target_status || "new_target"))}</strong></div>
+            <div><span>Outreach status</span><strong>${esc(c.outreach_status || "not_contacted")}</strong></div>
+            <div><span>Lead source</span><strong>${esc(c.lead_source || "—")}</strong></div>
+            <div><span>Industry</span><strong>${esc(c.lead_industry || "—")}</strong></div>
+            <div><span>Last contacted</span><strong>${esc(c.last_contacted_at || "—")}</strong></div>
+            <div><span>Next follow-up</span><strong>${esc(c.next_follow_up_at || "—")}</strong></div>
+            <div><span>Replied at</span><strong>${esc(c.replied_at || "—")}</strong></div>
           </div>
-          ${c.pipeline_notes ? `<div class="muted" style="font-size:11px;margin-top:12px">Pipeline notes</div><div style="white-space:pre-wrap;margin-top:6px">${esc(c.pipeline_notes)}</div>` : ""}
+          ${c.pipeline_notes ? `<div class="crm-detail-label" style="margin-top:12px">Pipeline notes</div><div class="crm-detail-note">${esc(c.pipeline_notes)}</div>` : ""}
         </div>` : "";
 
   const emailBtn = `<a class="btn" href="/customers/${c.id}/email/ai">AI Email</a>`;
@@ -1973,199 +2009,136 @@ fastify.get("/customers/:id", async (req, reply) => {
     : `<span class="btn secondary">No website</span>`;
 
   const body = `
-  <div class="grid">
-    <div class="card glass">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap">
-
-        <div>
-          <div style="font-size:28px;font-weight:900;letter-spacing:.3px">${esc(c.name)}</div>
-          <div class="muted" style="margin-top:4px;font-size:14px">
-            ${esc(c.business)} ${c.town ? " • " + esc(c.town) : ""}
+  <style>
+    /* CRM_CUSTOMER_DETAIL_ECOSYSTEM_V1 */
+    .top{display:none}
+    .wrap{max-width:none!important;margin:0!important;padding:0!important}
+    .crm-v1-shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:0;align-items:start;min-height:100vh;background:radial-gradient(circle at top left,#172942 0,#07111f 36%,#050a12 100%)}
+    .crm-v1-main{display:grid;gap:18px;padding:32px 32px 40px;max-width:1500px;width:100%}
+    .crm-v1-header,.crm-v1-surface,.crm-detail-sidecard{border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));box-shadow:0 16px 50px rgba(0,0,0,.22);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .crm-v1-header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}.crm-v1-hero{max-width:780px}.crm-v1-eyebrow{display:inline-flex;color:#d8ad4c;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.crm-v1-header h1{margin:6px 0;font-size:36px;line-height:1.02;letter-spacing:-.04em;color:#fff}.crm-v1-header p{margin:0;color:rgba(228,236,255,.76);font-size:15px;line-height:1.5}
+    .crm-v1-head-actions,.crm-detail-actions,.crm-detail-chiprow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.crm-detail-status{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}.crm-detail-status div{text-align:right}.crm-detail-status span,.crm-detail-label,.crm-detail-kv-grid span{display:block;color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-status strong,.crm-detail-kv-grid strong{display:block;color:#f4f7fb;margin-top:4px}
+    .crm-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}.crm-detail-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.crm-detail-kv-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);color:#d8e2f1}.crm-detail-wide{grid-column:1/-1}.crm-detail-value{margin-top:6px;color:#d8e2f1;font-weight:700;line-height:1.45;overflow-wrap:anywhere}.crm-detail-value a,.crm-detail-sidecard a{color:#7cc4ff}.crm-detail-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.crm-detail-note{margin-top:6px;white-space:pre-wrap;line-height:1.55;color:#d8e2f1;overflow-wrap:anywhere}
+    .crm-v1-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);color:#d8e2f1;font-size:12px;font-weight:800}.crm-detail-side{display:grid;gap:12px}.crm-detail-sidecard h2{margin:0 0 10px;color:#f4f7fb;font-size:18px}.crm-detail-sidecard label{color:#98a7bb;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.crm-detail-sidecard input,.crm-detail-sidecard textarea,.crm-detail-sidecard select{background:#07111f;color:#f4f7fb;border:1px solid rgba(255,255,255,.09);border-radius:12px}.crm-detail-sidecard table{width:100%;border-collapse:collapse}.crm-detail-sidecard th,.crm-detail-sidecard td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}.crm-detail-sidecard th{color:#98a7bb;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.crm-detail-email{border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:12px}.crm-detail-pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;margin:10px 0 0;border:1px solid rgba(255,255,255,.08);background:#07111f;padding:10px;border-radius:10px;color:#d8e2f1}
+    @media(max-width:1180px){.crm-v1-shell{grid-template-columns:1fr}.crm-detail-grid{grid-template-columns:1fr}}@media(max-width:760px){.crm-v1-main{padding:18px}.crm-v1-header-top{display:grid}.crm-detail-status{justify-content:flex-start}.crm-detail-status div{text-align:left}}
+  </style>
+  <div class="crm-v1-shell">
+    ${hubSidebar(detailNavActive)}
+    <main class="crm-v1-main">
+      <section class="crm-v1-header">
+        <div class="crm-v1-header-top">
+          <div class="crm-v1-hero">
+            <div class="crm-v1-eyebrow">Frontline AI Hub</div>
+            <h1>${esc(c.name)}</h1>
+            <p>${esc(c.business)}${c.town ? " • " + esc(c.town) : ""}</p>
+            <div class="crm-detail-actions" style="margin-top:14px">
+              ${emailBtn}
+              <form method="POST" action="/customers/${c.id}/email/sync/outlook" style="display:inline">
+                <button class="btn" type="submit">Sync Outlook</button>
+              </form>
+              ${callBtn}
+              ${webBtn}
+              <a class="btn secondary" href="/customers/${c.id}/edit">Edit</a>
+              ${isTarget ? `<a class="btn secondary" href="/targets">Targets</a>` : ""}
+            </div>
           </div>
+          <div>
+            <div class="crm-v1-head-actions"><a class="btn secondary" href="${esc(backHref)}">Back</a></div>
+            <div class="crm-detail-status">
+              <div><span>Status</span><strong>Active</strong></div>
+              <div><span>Updated</span><strong>${c.updatedAt ? new Date(c.updatedAt).toISOString().slice(0,10) : "—"}</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-            ${emailBtn}
-            <form method="POST" action="/customers/${c.id}/email/sync/outlook" style="display:inline">
-              <button class="btn" type="submit">Sync Outlook</button>
+      <div class="crm-detail-grid">
+        <section class="crm-v1-surface">
+          <div class="crm-detail-kv">
+            ${targetPanel}
+            <div class="crm-detail-kv-item"><div class="crm-detail-label">Email</div><div class="crm-detail-value">${c.email ? `<a href="/customers/${c.id}/email/ai">${esc(c.email)}</a>` : "—"}</div></div>
+            <div class="crm-detail-kv-item"><div class="crm-detail-label">Phone</div><div class="crm-detail-value">${c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : "—"}</div></div>
+            <div class="crm-detail-kv-item"><div class="crm-detail-label">Website</div><div class="crm-detail-value">${webHref ? `<a href="${esc(webHref)}" target="_blank" rel="noopener noreferrer">${esc(webHref)}</a>` : "—"}</div></div>
+            <div class="crm-detail-kv-item crm-detail-wide">
+              <div class="crm-detail-label">Tags</div>
+              <div class="crm-detail-chiprow" style="margin-top:8px">
+                ${c.tags ? c.tags.split(/[ ,]+/).filter(Boolean).map(t => `<span class="crm-v1-chip">${esc(t)}</span>`).join("") : "<span class='muted'>—</span>"}
+              </div>
+            </div>
+            <div class="crm-detail-kv-item crm-detail-wide">
+              <div class="crm-detail-label">Notes</div>
+              <div class="crm-detail-note">${esc(c.notes) || "<span class='muted'>—</span>"}</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="crm-detail-side">
+          <section class="crm-detail-sidecard">
+            <div class="crm-detail-actions" style="justify-content:space-between"><h2>People</h2><a class="crm-v1-chip" href="/employees">People</a></div>
+            ${
+              linkedEmployees.length === 0
+                ? `<div class="muted">None linked yet</div>`
+                : `<table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${linkedEmployees.map((e) => `
+                    <tr>
+                      <td><a href="/employees/${e.id}">${esc(e.full_name)}</a></td>
+                      <td>${esc(e.role || "—")}</td>
+                      <td class="right">
+                        <form method="post" action="/customers/${c.id}/employees/unlink" style="margin:0">
+                          <input type="hidden" name="employee_id" value="${esc(e.id)}" />
+                          <button class="btn secondary" type="submit">Unlink</button>
+                        </form>
+                      </td>
+                    </tr>`).join("")}</tbody></table>`
+            }
+            <form method="post" action="/customers/${c.id}/employees/link" style="margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px">
+              <label>Link existing people</label>
+              <select name="employeeIds" multiple size="8">
+                ${allEmployees.filter((e) => !linkedEmployees.some((x) => x.id === e.id)).map((e) => `<option value="${e.id}">${esc(e.full_name)}${e.role ? " • " + esc(e.role) : ""}</option>`).join("")}
+              </select>
+              <div class="crm-detail-actions" style="margin-top:10px;justify-content:flex-end"><button class="btn" type="submit">Link</button></div>
             </form>
-            ${callBtn}
-            ${webBtn}
-            <a class="btn secondary" href="/customers/${c.id}/edit">Edit</a>
-            ${isTarget ? `<a class="btn secondary" href="/targets">Targets</a>` : ""}
-          </div>
-        </div>
+          </section>
 
-        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-          <a class="btn secondary" href="${esc(backHref)}">Back</a>
-
-          <div style="display:flex;gap:10px;margin-top:6px">
-            <div style="text-align:right">
-              <div class="muted" style="font-size:11px">STATUS</div>
-              <div style="font-weight:700">Active</div>
-            </div>
-            <div style="text-align:right">
-              <div class="muted" style="font-size:11px">UPDATED</div>
-              <div style="font-weight:700">${c.updatedAt ? new Date(c.updatedAt).toISOString().slice(0,10) : "—"}</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px">
-        ${targetPanel}
-
-        <div class="card glass">
-          <div class="muted" style="font-size:11px">EMAIL</div>
-          <div style="margin-top:6px;font-weight:600">
-            ${c.email ? `<a href="/customers/${c.id}/email/ai">${esc(c.email)}</a>` : "—"}
-          </div>
-        </div>
-
-        <div class="card glass">
-          <div class="muted" style="font-size:11px">PHONE</div>
-          <div style="margin-top:6px;font-weight:600">
-            ${c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : "—"}
-          </div>
-        </div>
-
-        <div class="card glass">
-          <div class="muted" style="font-size:11px">WEBSITE</div>
-          <div style="margin-top:6px;font-weight:600">
-            ${webHref ? `<a href="${esc(webHref)}" target="_blank" rel="noopener noreferrer">${esc(webHref)}</a>` : "—"}
-          </div>
-        </div>
-
-      </div>
-
-      <div class="card glass" style="margin-top:14px">
-        <div style="display:flex;flex-direction:column;gap:12px">
-
-          <div>
-            <div class="muted" style="font-size:11px">TAGS</div>
-            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-              ${c.tags
-                ? c.tags.split(/[ ,]+/).filter(Boolean).map(t => `<span class="pill">${esc(t)}</span>`).join("")
-                : "<span class='muted'>—</span>"}
-            </div>
-          </div>
-
-          <div>
-            <div class="muted" style="font-size:11px">NOTES</div>
-            <div style="margin-top:6px;white-space:pre-wrap;line-height:1.5">
-              ${esc(c.notes) || "<span class='muted'>—</span>"}
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <div style="display:grid;gap:12px">
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div style="font-weight:800">Linked employees</div>
-          <a class="pill" href="/employees">Employees</a>
-        </div>
-
-        <div style="margin-top:10px">
-          ${
-            linkedEmployees.length === 0
-              ? `<div class="muted">None linked yet</div>`
-              : `<table>
-                   <thead>
-                     <tr><th>Name</th><th>Role</th><th></th></tr>
-                   </thead>
-                   <tbody>
-                     ${linkedEmployees
-                       .map((e) => `
-                         <tr>
-                           <td><a href="/employees/${e.id}">${esc(e.full_name)}</a></td>
-                           <td>${esc(e.role || "—")}</td>
-                           <td class="right">
-                             <form method="post" action="/customers/${c.id}/employees/unlink" style="margin:0">
-                               <input type="hidden" name="employee_id" value="${esc(e.id)}" />
-                               <button class="btn secondary" type="submit">Unlink</button>
-                             </form>
-                           </td>
-                         </tr>`)
-                       .join("")}
-                   </tbody>
-                 </table>`
-          }
-        </div>
-
-        <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
-          <form method="post" action="/customers/${c.id}/employees/link">
-            <label>Link existing employees (select one or many)</label>
-            <select name="employeeIds" multiple size="8">
-              ${allEmployees
-                .filter((e) => !linkedEmployees.some((x) => x.id === e.id))
-                .map((e) => `<option value="${e.id}">${esc(e.full_name)}${e.role ? " • " + esc(e.role) : ""}</option>`)
-                .join("")}
-            </select>
-            <div class="row" style="margin-top:10px;justify-content:flex-end">
-              <button class="btn" type="submit">Link</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div class="card">
-          <div class="row" style="justify-content:space-between;align-items:center">
-            <div style="font-weight:800">Email history</div>
-          </div>
-
-          ${(() => {
-            const emails = db.prepare("SELECT type, note, email_body, email_subject, email_from, email_to, at FROM touchpoints WHERE customerId=? AND type IN ('email_out','email_in') ORDER BY at DESC LIMIT 20").all(id);
-            if (!emails.length) return `<div class="muted" style="margin-top:10px">No emails logged yet</div>`;
-            return emails.map((msg, idx) => {
-              const when = msg.at ? new Date(msg.at * 1000).toISOString().replace("T"," ").slice(0,16) : "";
-              const body = String(msg.email_body || msg.note || "").trim();
-              const clipped = body.length > 3000 ? body.slice(0, 2990) + "..." : body;
-              return `
-                <div style="${idx === 0 ? 'margin-top:10px' : 'margin-top:14px;padding-top:14px;border-top:1px solid var(--line)'}">
+          <section class="crm-detail-sidecard">
+            <h2>Email history</h2>
+            ${(() => {
+              const emails = db.prepare("SELECT type, note, email_body, email_subject, email_from, email_to, at FROM touchpoints WHERE customerId=? AND type IN ('email_out','email_in') ORDER BY at DESC LIMIT 20").all(id);
+              if (!emails.length) return `<div class="muted">No emails logged yet</div>`;
+              return emails.map((msg, idx) => {
+                const when = msg.at ? new Date(msg.at * 1000).toISOString().replace("T"," ").slice(0,16) : "";
+                const emailBody = String(msg.email_body || msg.note || "").trim();
+                const clipped = emailBody.length > 3000 ? emailBody.slice(0, 2990) + "..." : emailBody;
+                return `<div class="${idx === 0 ? "" : "crm-detail-email"}">
                   <div class="muted">${esc(when)} • ${esc(msg.type || '')}</div>
                   ${msg.email_subject ? `<div class="muted" style="margin-top:6px">Subject: ${esc(msg.email_subject)}</div>` : (msg.note ? `<div class="muted" style="margin-top:6px">${esc(msg.note)}</div>` : ``)}
                   ${msg.email_from ? `<div class="muted" style="margin-top:4px">From: ${esc(msg.email_from)}</div>` : ``}
                   ${msg.email_to ? `<div class="muted" style="margin-top:4px">To: ${esc(msg.email_to)}</div>` : ``}
-                  <details style="margin-top:10px">
-                    <summary class="muted" style="cursor:pointer">Show email</summary>
-                    <pre style="white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow-x:auto;margin:10px 0 0 0;border:1px solid var(--border);background:var(--panel);padding:10px;border-radius:10px">${esc(clipped)}</pre>
-                  </details>
-                </div>
-              `;
-            }).join("");
-          })()}
-        </div>
+                  <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Show email</summary><pre class="crm-detail-pre">${esc(clipped)}</pre></details>
+                </div>`;
+              }).join("");
+            })()}
+          </section>
 
-<div class="card">
-        <div style="font-weight:800;margin-bottom:10px">Touchpoints</div>
-        <form method="post" action="/customers/${c.id}/touchpoints">
-          <label>Type</label>
-          <input name="type" placeholder="call email visit note" required />
-          <label>Note</label>
-          <textarea name="note" placeholder="What happened"></textarea>
-          <button class="btn" type="submit" style="margin-top:10px">Add</button>
-        </form>
-
-        <div style="margin-top:12px">
-          ${tps.length === 0 ? `<div class="muted">No touchpoints yet</div>` : ""}
-          ${tps
-            .map((tp) => {
-              const d = new Date(tp.at).toISOString().replace("T", " ").slice(0, 16);
-              return `<div style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
-                <div class="row" style="justify-content:space-between">
-                  <div class="pill">${esc(tp.type)}</div>
-                  <div class="muted">${esc(d)}</div>
-                </div>
-                <div style="white-space:pre-wrap;margin-top:8px">${esc(tp.note)}</div>
-              </div>`;
-            })
-            .join("")}
-        </div>
+          <section class="crm-detail-sidecard">
+            <h2>Touchpoints</h2>
+            <form method="post" action="/customers/${c.id}/touchpoints">
+              <label>Type</label>
+              <input name="type" placeholder="call email visit note" required />
+              <label>Note</label>
+              <textarea name="note" placeholder="What happened"></textarea>
+              <button class="btn" type="submit" style="margin-top:10px">Add</button>
+            </form>
+            <div style="margin-top:12px">
+              ${tps.length === 0 ? `<div class="muted">No touchpoints yet</div>` : ""}
+              ${tps.map((tp) => {
+                const d = new Date(tp.at).toISOString().replace("T", " ").slice(0, 16);
+                return `<div class="crm-detail-email"><div class="crm-detail-actions" style="justify-content:space-between"><div class="crm-v1-chip">${esc(tp.type)}</div><div class="muted">${esc(d)}</div></div><div class="crm-detail-note">${esc(tp.note)}</div></div>`;
+              }).join("")}
+            </div>
+          </section>
+        </aside>
       </div>
-    </div>
+    </main>
   </div>`;
 
   return reply.type("text/html").send(layout(c.name, body));
@@ -2845,144 +2818,72 @@ fastify.get("/employees", async (req, reply) => {
     )
     .all(params);
 
-  const body = `
-  <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-weight:800;font-size:18px">Employees</div>
-        <div class="muted">People linked to restaurants</div>
-      </div>
-      <div class="row">
-        <a class="btn" href="/employees/new">+ New employee</a>
-      </div>
-    </div>
+  const stats = {
+    total: db.prepare(`SELECT COUNT(1) AS n FROM employees`).get().n,
+    withLinkedIn: db.prepare(`SELECT COUNT(1) AS n FROM employees WHERE TRIM(COALESCE(linkedin_url,'')) != ''`).get().n,
+    withEmail: db.prepare(`SELECT COUNT(1) AS n FROM employees WHERE TRIM(COALESCE(email,'')) != ''`).get().n,
+    linkedCompanies: db.prepare(`SELECT COUNT(DISTINCT customer_id) AS n FROM employee_customers`).get().n,
+  };
 
-    <form method="get" action="/employees" style="margin-top:12px" class="row">
-      <div style="flex:1;min-width:240px">
-        <label>Search</label>
-        <input name="q" value="${esc(q)}" placeholder="name role stage status" />
+  const body = renderPeopleShell("People", "CRM contacts linked to target companies and customer records.", `
+    <section class="crm-v1-header">
+      <div class="crm-v1-stats" style="margin-top:0">
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stats.total))}</div><div class="crm-v1-stat-l">People</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stats.withLinkedIn))}</div><div class="crm-v1-stat-l">With LinkedIn</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stats.withEmail))}</div><div class="crm-v1-stat-l">With email</div></div>
+        <div class="crm-v1-stat"><div class="crm-v1-stat-k">${esc(String(stats.linkedCompanies))}</div><div class="crm-v1-stat-l">Linked companies</div></div>
       </div>
-      <div style="align-self:flex-end">
+    </section>
+    <section class="crm-v1-surface">
+      <form method="get" action="/employees" class="crm-v1-filterbar">
+        <label>Search<input name="q" value="${esc(q)}" placeholder="name role stage status" /></label>
         <button class="btn secondary" type="submit">Filter</button>
+      </form>
+      <div class="crm-v1-list">
+        ${rows.length ? rows.map((e) => `
+          <div class="crm-v1-row">
+            <div><a class="crm-v1-name" href="/employees/${e.id}">${esc(e.full_name)}</a><div class="crm-v1-meta">${esc(e.linkedin_url || "No LinkedIn saved")}</div></div>
+            <div class="crm-v1-badge">${esc(e.role || "No role")}</div>
+            <div class="crm-v1-badge">${esc(e.stage || "No stage")}</div>
+            <div class="crm-v1-badge">${esc(e.status || "No status")}</div>
+            <div class="crm-v1-badge">${esc(String(e.restaurant_count || 0))} companies</div>
+            <a class="btn secondary" href="/employees/${e.id}/edit">Edit</a>
+          </div>`).join("") : `<div class="crm-v1-empty">No people found yet.</div>`}
       </div>
-    </form>
+    </section>
+  `, `<a class="btn" href="/employees/new">Add person</a>`);
 
-    <div style="margin-top:12px;overflow:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Stage</th>
-            <th>Status</th>
-            <th>Restaurants</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map((e) => `
-              <tr>
-                <td><a href="/employees/${e.id}">${esc(e.full_name)}</a></td>
-                <td>${esc(e.role || "—")}</td>
-                <td>${esc(e.stage || "—")}</td>
-                <td>${esc(e.status || "—")}</td>
-                <td>${esc(String(e.restaurant_count || 0))}</td>
-                <td><a class="btn secondary" href="/employees/${e.id}/edit">Edit</a></td>
-              </tr>`)
-            .join("")}
-        </tbody>
-      </table>
-      ${rows.length === 0 ? `<div class="muted" style="margin-top:10px">No employees yet</div>` : ""}
-    </div>
-  </div>`;
-
-  return reply.type("text/html").send(layout("Employees", body));
+  return reply.type("text/html").send(layout("People", body));
 });
 
 fastify.get("/employees/new", async (req, reply) => {
   if (!requireAuth(req, reply)) return;
   const cs = allCustomersForPicklist();
-  const e = {};
+  const stageOptions = ["", "New", "Connected", "Replied", "Interested", "Call Booked", "Not Interested", "No Response", "Closed Won"];
+  const statusOptions = ["", "Waiting reply", "Follow-up today", "Follow-up later", "Call booked", "Not interested"];
+  const body = renderPeopleShell("Add Person", "Create a CRM person/contact and link them to one or more companies.", `
+    <section class="crm-v1-surface">
+      <form class="people-form" method="post" action="/employees/new">
+        <div class="people-form-grid">
+          <label>Full name<input name="full_name" required /></label>
+          <label>First name<input name="first_name" /></label>
+          <label>Role / job title<input name="role" /></label>
+          <label>LinkedIn URL<input name="linkedin_url" /></label>
+          <label>Phone<input name="phone" inputmode="tel" autocomplete="tel" /></label>
+          <label>Email<input name="email" type="email" autocomplete="email" /></label>
+          <label>Stage<select name="stage">${stageOptions.map(v => `<option value="${esc(v)}">${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Status<select name="status">${statusOptions.map(v => `<option value="${esc(v)}">${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Last message sent<input name="last_message_sent" placeholder="YYYY-MM-DD or free text" /></label>
+          <label>Next follow-up date<input name="next_follow_up_date" placeholder="YYYY-MM-DD" /></label>
+          <label class="wide">Companies<select name="customerIds" multiple size="8">${cs.map(c => `<option value="${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</option>`).join("")}</select></label>
+          <label class="wide">Notes<textarea name="notes"></textarea></label>
+        </div>
+        <div class="crm-v1-head-actions" style="justify-content:flex-end;margin-top:14px"><button class="btn" type="submit">Save person</button></div>
+      </form>
+    </section>
+  `, `<a class="btn secondary" href="/employees">Back</a>`);
 
-  const body = `
-  <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div style="font-weight:900;font-size:18px">New employee</div>
-      <a class="btn secondary" href="/employees">Back</a>
-<form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin-top:10px;"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
-    </div>
-
-    <form method="post" action="/employees/new">
-      <label>Full name</label>
-      <input name="full_name" required />
-
-      <label>First name</label>
-      <input name="first_name" />
-
-      <label>Role</label>
-      <input name="role" />
-
-      <label>LinkedIn URL</label>
-      <input name="linkedin_url" />
-
-      
-
-      <label>Phone</label>
-      <input name="phone" value="" inputmode="tel" autocomplete="tel" />
-
-      <label>Personal Email</label>
-      <input name="email" value="" type="email" autocomplete="email" />
-<label>Stage</label>
-<div style="display:flex;gap:10px;align-items:center">
-  <span style="width:14px;height:14px;border-radius:999px;background:${({"New":"#d8b4fe","Connected":"#93c5fd","Replied":"#fde68a","Interested":"#e5e7eb","Call Booked":"#bbf7d0","Not Interested":"#fca5a5","No Response":"#e5e7eb","Closed Won":"#60a5fa"}[(e||{}).stage]||"#243041")};border:1px solid var(--line);flex:0 0 auto"></span>
-  <select name="stage">
-    <option value="">—</option>
-    <option value="New" ${(e||{}).stage==="New"?"selected":""}>New</option>
-    <option value="Connected" ${(e||{}).stage==="Connected"?"selected":""}>Connected</option>
-    <option value="Replied" ${(e||{}).stage==="Replied"?"selected":""}>Replied</option>
-    <option value="Interested" ${(e||{}).stage==="Interested"?"selected":""}>Interested</option>
-    <option value="Call Booked" ${(e||{}).stage==="Call Booked"?"selected":""}>Call Booked</option>
-    <option value="Not Interested" ${(e||{}).stage==="Not Interested"?"selected":""}>Not Interested</option>
-    <option value="No Response" ${(e||{}).stage==="No Response"?"selected":""}>No Response</option>
-    <option value="Closed Won" ${(e||{}).stage==="Closed Won"?"selected":""}>Closed Won</option>
-  </select>
-</div>
-
-      <label>Status</label>
-<div style="display:flex;gap:10px;align-items:center">
-  <span style="width:14px;height:14px;border-radius:999px;background:${({"Waiting reply":"#fde68a","Follow-up today":"#fdba74","Follow-up later":"#93c5fd","Call booked":"#bbf7d0","Not interested":"#fca5a5"}[(e||{}).status]||"#243041")};border:1px solid var(--line);flex:0 0 auto"></span>
-  <select name="status">
-    <option value="">—</option>
-    <option value="Waiting reply" ${(e||{}).status==="Waiting reply"?"selected":""}>Waiting reply</option>
-    <option value="Follow-up today" ${(e||{}).status==="Follow-up today"?"selected":""}>Follow-up today</option>
-    <option value="Follow-up later" ${(e||{}).status==="Follow-up later"?"selected":""}>Follow-up later</option>
-    <option value="Call booked" ${(e||{}).status==="Call booked"?"selected":""}>Call booked</option>
-    <option value="Not interested" ${(e||{}).status==="Not interested"?"selected":""}>Not interested</option>
-  </select>
-</div>
-
-      <label>Last message sent</label>
-      <input name="last_message_sent" placeholder="YYYY-MM-DD or free text" />
-
-      <label>Next follow-up date</label>
-      <input name="next_follow_up_date" placeholder="YYYY-MM-DD" />
-
-      <label>Restaurants (select one or many)</label>
-      <select name="customerIds" multiple size="8">
-        ${cs.map(c => `<option value="${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</option>`).join("")}
-      </select>
-
-      <label>Notes</label>
-      <textarea name="notes"></textarea>
-
-      <div class="row" style="margin-top:12px;justify-content:flex-end">
-        <button class="btn" type="submit">Save</button>
-      </div>
-    </form>
-  </div>`;
-
-  return reply.type("text/html").send(layout("New employee", body));
+  return reply.type("text/html").send(layout("Add Person", body));
 });
 
 fastify.post("/employees/new", async (req, reply) => {
@@ -3031,89 +2932,50 @@ fastify.get("/employees/:id", async (req, reply) => {
   if (!e) return reply.code(404).type("text/html").send(layout("Not found", `<div class="card">Not found</div>`));
 
   const links = employeeCustomerLinks(id);
-  const body = `
-  <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <div>
-        <div style="font-weight:900;font-size:22px">${esc(e.full_name)}</div>
-        <div class="muted">${esc(e.role || "")}</div>
-        <div class="row" style="margin-top:10px">
-          ${e.linkedin_url ? `<a class="btn secondary" href="${esc(e.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : `<span class="btn secondary">No LinkedIn</span>`}
-          <a class="btn secondary" href="/employees/${e.id}/edit">Edit</a>
+  const lastEmail = db.prepare("SELECT type, note, email_body, email_subject, email_from, email_to, at FROM touchpoints WHERE employeeId=? AND type IN ('email_out','email_in') ORDER BY at DESC LIMIT 1").get(id);
+  const body = renderPeopleShell(e.full_name, e.role || "CRM person/contact", `
+    <div class="people-grid">
+      <section class="crm-v1-surface">
+        <div class="people-kv">
+          <div class="people-kv-item"><div class="people-label">Role / job title</div><div class="people-value">${esc(e.role || "—")}</div></div>
+          <div class="people-kv-item"><div class="people-label">LinkedIn</div><div class="people-value">${e.linkedin_url ? `<a href="${esc(e.linkedin_url)}" target="_blank" rel="noopener noreferrer">${esc(e.linkedin_url)}</a>` : "—"}</div></div>
+          <div class="people-kv-item"><div class="people-label">Phone</div><div class="people-value">${e.phone ? `<a href="tel:${esc(e.phone)}">${esc(e.phone)}</a>` : "—"}</div></div>
+          <div class="people-kv-item"><div class="people-label">Email</div><div class="people-value">${e.email ? `<a href="mailto:${esc(e.email)}">${esc(e.email)}</a>` : "—"}</div></div>
+          <div class="people-kv-item"><div class="people-label">Stage</div><div class="people-value">${esc(e.stage || "—")}</div></div>
+          <div class="people-kv-item"><div class="people-label">Status</div><div class="people-value">${esc(e.status || "—")}</div></div>
+          <div class="people-kv-item"><div class="people-label">Next follow-up</div><div class="people-value">${esc(e.next_follow_up_date || "—")}</div></div>
+          <div class="people-kv-item"><div class="people-label">Last message</div><div class="people-value">${esc(e.last_message_sent || "—")}</div></div>
+          <div class="people-kv-item wide" style="grid-column:1/-1"><div class="people-label">Notes</div><div class="people-note">${esc(e.notes) || "<span class='muted'>—</span>"}</div></div>
         </div>
-          <div class="row" style="margin-top:10px">
-            ${e.phone ? `<a class="btn secondary" href="tel:${esc(e.phone)}">Call</a>` : `<span class="btn secondary">No phone</span>`}
-            ${e.email ? `<a class="btn secondary" href="mailto:${esc(e.email)}">Email</a>` : `<span class="btn secondary">No email</span>`}
+      </section>
+      <aside style="display:grid;gap:18px">
+        <section class="crm-v1-surface">
+          <div class="people-label">Linked companies</div>
+          <div class="crm-v1-head-actions" style="margin-top:10px">
+            ${links.length === 0 ? `<span class="muted">None yet</span>` : links.map(c => `<a class="crm-v1-chip" href="/customers/${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</a>`).join("")}
           </div>
-
-          <div class="row" style="margin-top:12px">
-            <div style="flex:1;min-width:240px">
-              <div class="muted">Phone</div>
-              <div>${esc(e.phone || "—")}</div>
-            </div>
-            <div style="flex:1;min-width:240px">
-              <div class="muted">Personal Email</div>
-              <div>${esc(e.email || "—")}</div>
-            </div>
-          </div>
-
-      </div>
-      <a class="btn secondary" href="/employees">Back</a>
-<form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin-top:10px;"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
+        </section>
+        <section class="crm-v1-surface">
+          <div class="people-label">Last email thread</div>
+          ${lastEmail ? (() => {
+            const when = lastEmail.at ? new Date(lastEmail.at * 1000).toISOString().replace("T"," ").slice(0,16) : "";
+            const emailBody = String(lastEmail.email_body || lastEmail.note || "").trim();
+            const clipped = emailBody.length > 3000 ? emailBody.slice(0, 2990) + "..." : emailBody;
+            return `<div class="crm-v1-meta" style="margin-top:8px">${esc(when)} • ${esc(lastEmail.type || '')}</div><details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Show email</summary><pre class="people-note" style="border:1px solid rgba(255,255,255,.08);background:#07111f;padding:10px;border-radius:10px">${esc(clipped)}</pre></details>`;
+          })() : `<div class="muted" style="margin-top:10px">No emails logged yet</div>`}
+        </section>
+      </aside>
     </div>
+  `, `
+    <a class="btn secondary" href="/employees">Back</a>
+    <a class="btn secondary" href="/employees/${e.id}/edit">Edit</a>
+    ${e.linkedin_url ? `<a class="btn secondary" href="${esc(e.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn</a>` : ""}
+    ${e.phone ? `<a class="btn secondary" href="tel:${esc(e.phone)}">Call</a>` : ""}
+    ${e.email ? `<a class="btn secondary" href="mailto:${esc(e.email)}">Email</a>` : ""}
+    <form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin:0"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
+  `);
 
-    <div class="row" style="margin-top:12px">
-      <div style="flex:1;min-width:240px">
-        <div class="muted">Stage</div>
-        <div>${esc(e.stage || "—")}</div>
-      </div>
-      <div style="flex:1;min-width:240px">
-        <div class="muted">Status</div>
-        <div>${esc(e.status || "—")}</div>
-      </div>
-      <div style="flex:1;min-width:240px">
-        <div class="muted">Next follow-up</div>
-        <div>${esc(e.next_follow_up_date || "—")}</div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px">
-      <div class="muted">Notes</div>
-      <div style="white-space:pre-wrap;margin-top:6px">${esc(e.notes) || "<span class='muted'>—</span>"}</div>
-    </div>
-
-    <div style="display:grid;gap:12px;grid-template-columns: 1.2fr 0.8fr;margin-top:12px">
-      <div></div>
-
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center">
-          <div style="font-weight:800">Last email thread</div>
-        </div>
-
-        ${(() => {
-          const last = db.prepare("SELECT type, note, email_body, email_subject, email_from, email_to, at FROM touchpoints WHERE employeeId=? AND type IN ('email_out','email_in') ORDER BY at DESC LIMIT 1").get(id);
-          if (!last) return `<div class="muted" style="margin-top:10px">No emails logged yet</div>`;
-          const when = last.at ? new Date(last.at * 1000).toISOString().replace("T"," ").slice(0,16) : "";
-          const body = String(last.email_body || last.note || "").trim();
-          const clipped = body.length > 3000 ? body.slice(0, 2990) + "..." : body;
-          return `
-            <div class="muted" style="margin-top:8px">${esc(when)} • ${esc(last.type || '')}</div>
-            <details style="margin-top:10px">
-              <summary class="muted" style="cursor:pointer">Show email</summary>
-              <pre style="white-space:pre-wrap;margin:10px 0 0 0;border:1px solid var(--border);background:var(--panel);padding:10px;border-radius:10px">${esc(clipped)}</pre>
-            </details>
-          `;
-        })()}
-      </div>
-    </div>
-
-    <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
-      <div style="font-weight:800;margin-bottom:10px">Linked restaurants</div>
-      ${links.length === 0 ? `<div class="muted">None yet</div>` : `<div class="row">${links.map(c => `<a class="pill" href="/customers/${c.id}">${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</a>`).join("")}</div>`}
-    </div>
-  </div>`;
-
-  return reply.type("text/html").send(layout("Employee", body));
+  return reply.type("text/html").send(layout("Person", body));
 });
 
 fastify.get("/employees/:id/edit", async (req, reply) => {
@@ -3125,88 +2987,40 @@ fastify.get("/employees/:id/edit", async (req, reply) => {
   const links = employeeCustomerLinks(id).map(x => x.id);
   const cs = allCustomersForPicklist();
 
-  const body = `
-  <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div style="font-weight:900;font-size:18px">Edit employee</div>
-      <a class="btn secondary" href="/employees/${e.id}">Back</a>
-<form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin-top:10px;"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
-    </div>
+  const stageOptions = ["", "New", "Connected", "Replied", "Interested", "Call Booked", "Not Interested", "No Response", "Closed Won"];
+  const statusOptions = ["", "Waiting reply", "Follow-up today", "Follow-up later", "Call booked", "Not interested"];
+  const body = renderPeopleShell("Edit Person", e.full_name || "Update CRM person/contact details.", `
+    <section class="crm-v1-surface">
+      <form class="people-form" method="post" action="/employees/${e.id}/edit">
+        <div class="people-form-grid">
+          <label>Full name<input name="full_name" required value="${esc(e.full_name)}" /></label>
+          <label>First name<input name="first_name" value="${esc(e.first_name || "")}" /></label>
+          <label>Role / job title<input name="role" value="${esc(e.role || "")}" /></label>
+          <label>LinkedIn URL<input name="linkedin_url" value="${esc(e.linkedin_url || "")}" /></label>
+          <label>Phone<input name="phone" value="${esc(e.phone || "")}" inputmode="tel" autocomplete="tel" /></label>
+          <label>Email<input name="email" value="${esc(e.email || "")}" type="email" autocomplete="email" /></label>
+          <label>Stage<select name="stage">${stageOptions.map(v => `<option value="${esc(v)}" ${v === (e.stage || "") ? "selected" : ""}>${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Status<select name="status">${statusOptions.map(v => `<option value="${esc(v)}" ${v === (e.status || "") ? "selected" : ""}>${v ? esc(v) : "—"}</option>`).join("")}</select></label>
+          <label>Last message sent<input name="last_message_sent" value="${esc(e.last_message_sent || "")}" /></label>
+          <label>Next follow-up date<input name="next_follow_up_date" value="${esc(e.next_follow_up_date || "")}" /></label>
+          <label class="wide">Companies<select name="customerIds" multiple size="10">${cs.map(c => {
+            const sel = links.includes(c.id) ? " selected" : "";
+            return `<option value="${c.id}"${sel}>${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</option>`;
+          }).join("")}</select></label>
+          <label class="wide">Notes<textarea name="notes">${esc(e.notes || "")}</textarea></label>
+        </div>
+        <div class="crm-v1-head-actions" style="justify-content:flex-end;margin-top:14px">
+          <button class="btn" type="submit">Save person</button>
+          <button class="btn danger" type="submit" formaction="/employees/${e.id}/delete" formmethod="post" onclick="return confirm('Delete this person?' )">Delete</button>
+        </div>
+      </form>
+    </section>
+  `, `
+    <a class="btn secondary" href="/employees/${e.id}">Back</a>
+    <form method="POST" action="/employees/${e.id}/email/sync/outlook" style="margin:0"><button class="btn" type="submit">Sync Outlook Inbox</button></form>
+  `);
 
-    <form method="post" action="/employees/${e.id}/edit">
-      <label>Full name</label>
-      <input name="full_name" required value="${esc(e.full_name)}" />
-
-      <label>First name</label>
-      <input name="first_name" value="${esc(e.first_name || "")}" />
-
-      <label>Role</label>
-      <input name="role" value="${esc(e.role || "")}" />
-
-      <label>LinkedIn URL</label>
-      <input name="linkedin_url" value="${esc(e.linkedin_url || "")}" />
-
-      
-
-      <label>Phone</label>
-      <input name="phone" value="${esc(e.phone || "")}" inputmode="tel" autocomplete="tel" />
-
-      <label>Personal Email</label>
-      <input name="email" value="${esc(e.email || "")}" type="email" autocomplete="email" />
-<label>Stage</label>
-      <div style="display:flex;gap:10px;align-items:center">
-  <span style="width:14px;height:14px;border-radius:999px;background:${({"New":"#d8b4fe","Connected":"#93c5fd","Replied":"#fde68a","Interested":"#e5e7eb","Call Booked":"#bbf7d0","Not Interested":"#fca5a5","No Response":"#e5e7eb","Closed Won":"#60a5fa"}[(e||{}).stage]||"#243041")};border:1px solid var(--line);flex:0 0 auto"></span>
-  <select name="stage">
-    <option value="">—</option>
-    <option value="New" ${(e||{}).stage==="New"?"selected":""}>New</option>
-    <option value="Connected" ${(e||{}).stage==="Connected"?"selected":""}>Connected</option>
-    <option value="Replied" ${(e||{}).stage==="Replied"?"selected":""}>Replied</option>
-    <option value="Interested" ${(e||{}).stage==="Interested"?"selected":""}>Interested</option>
-    <option value="Call Booked" ${(e||{}).stage==="Call Booked"?"selected":""}>Call Booked</option>
-    <option value="Not Interested" ${(e||{}).stage==="Not Interested"?"selected":""}>Not Interested</option>
-    <option value="No Response" ${(e||{}).stage==="No Response"?"selected":""}>No Response</option>
-    <option value="Closed Won" ${(e||{}).stage==="Closed Won"?"selected":""}>Closed Won</option>
-  </select>
-</div>
-
-      <label>Status</label>
-      <div style="display:flex;gap:10px;align-items:center">
-  <span style="width:14px;height:14px;border-radius:999px;background:${({"Waiting reply":"#fde68a","Follow-up today":"#fdba74","Follow-up later":"#93c5fd","Call booked":"#bbf7d0","Not interested":"#fca5a5"}[(e||{}).status]||"#243041")};border:1px solid var(--line);flex:0 0 auto"></span>
-  <select name="status">
-    <option value="">—</option>
-    <option value="Waiting reply" ${(e||{}).status==="Waiting reply"?"selected":""}>Waiting reply</option>
-    <option value="Follow-up today" ${(e||{}).status==="Follow-up today"?"selected":""}>Follow-up today</option>
-    <option value="Follow-up later" ${(e||{}).status==="Follow-up later"?"selected":""}>Follow-up later</option>
-    <option value="Call booked" ${(e||{}).status==="Call booked"?"selected":""}>Call booked</option>
-    <option value="Not interested" ${(e||{}).status==="Not interested"?"selected":""}>Not interested</option>
-  </select>
-</div>
-
-      <label>Last message sent</label>
-      <input name="last_message_sent" value="${esc(e.last_message_sent || "")}" />
-
-      <label>Next follow-up date</label>
-      <input name="next_follow_up_date" value="${esc(e.next_follow_up_date || "")}" />
-
-      <label>Restaurants (select one or many)</label>
-      <select name="customerIds" multiple size="10">
-        ${cs.map(c => {
-          const sel = links.includes(c.id) ? " selected" : "";
-          return `<option value="${c.id}"${sel}>${esc(c.name)}${c.town ? " • " + esc(c.town) : ""}</option>`;
-        }).join("")}
-      </select>
-
-      <label>Notes</label>
-      <textarea name="notes">${esc(e.notes || "")}</textarea>
-
-      <div class="row" style="margin-top:12px;justify-content:flex-end">
-        <button class="btn" type="submit">Save</button>
-          <button class="btn danger" type="submit" formaction="/employees/${e.id}/delete" formmethod="post" onclick="return confirm('Delete this employee?' )">Delete</button>
-      </div>
-    </form>
-  </div>`;
-
-  return reply.type("text/html").send(layout("Edit employee", body));
+  return reply.type("text/html").send(layout("Edit Person", body));
 });
 
 fastify.post("/employees/:id/edit", async (req, reply) => {
