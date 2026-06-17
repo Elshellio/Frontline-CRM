@@ -166,6 +166,21 @@ function crmNorm(s) {
   return String(s || "").trim();
 }
 
+function crmSafeReturnPath(value, fallback = "/customers") {
+  const raw = crmNorm(value);
+  if (!raw || /^https?:\/\//i.test(raw) || raw.startsWith("//")) return fallback;
+  let path = raw;
+  if (path.startsWith("/crm/")) path = path.slice(4);
+  if (path === "/crm") path = "/customers";
+  if (
+    path === "/targets" || path.startsWith("/targets?") ||
+    path === "/customers" || path.startsWith("/customers?")
+  ) {
+    return path;
+  }
+  return fallback;
+}
+
 function crmNormLower(s) {
   return crmNorm(s).toLowerCase();
 }
@@ -1096,6 +1111,8 @@ fastify.get("/customers", async (req, reply) => {
     return `/customers?${qp.toString()}`;
   }
 
+  const currentCustomersReturn = `/customers${req.url && String(req.url).includes("?") ? "?" + String(req.url).split("?").slice(1).join("?") : ""}`;
+
   function safeWebHref(web) {
     const v = String(web || "").trim();
     if (!v) return "";
@@ -1614,7 +1631,7 @@ fastify.get("/customers", async (req, reply) => {
               </div>
 
               <div class="crm-v1-actions">
-                <a class="btn secondary" href="/customers/${selectedFresh.id}">Open full record</a>
+                <a class="btn secondary" href="/customers/${selectedFresh.id}?returnTo=${encodeURIComponent(currentCustomersReturn)}">Open full record</a>
                 <a class="btn secondary" href="/customers/${selectedFresh.id}/email/ai">AI Email</a>
                 <form method="POST" action="/customers/${selectedFresh.id}/email/sync/outlook" style="margin:0">
                   <button class="btn secondary" type="submit">Sync Outlook</button>
@@ -1716,6 +1733,7 @@ fastify.get("/targets", async (req, reply) => {
     const active = validStatus === s ? " active" : "";
     return `<a class="target-filter${active}" href="/targets?status=${encodeURIComponent(s)}">${esc(targetStatusLabel(s))}</a>`;
   }).join("");
+  const currentTargetsReturn = `/targets${req.url && String(req.url).includes("?") ? "?" + String(req.url).split("?").slice(1).join("?") : ""}`;
 
   const body = `
   <style>
@@ -1777,7 +1795,7 @@ fastify.get("/targets", async (req, reply) => {
               <td>${r.phone ? `<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>` : "—"}</td>
               <td>${esc(targetStatusLabel(r.target_status || "new_target"))}</td>
               <td>${esc(r.next_follow_up_at || "—")}</td>
-              <td><a class="btn secondary" href="/customers/${r.id}">Open</a></td>
+              <td><a class="btn secondary" href="/customers/${r.id}?returnTo=${encodeURIComponent(currentTargetsReturn)}">Open</a></td>
             </tr>
             <tr>
               <td colspan="8">
@@ -1935,6 +1953,7 @@ fastify.get("/customers/:id", async (req, reply) => {
   const linkedEmployees = customerEmployeeLinks(id);
   const allEmployees = allEmployeesForPicklist();
   const isTarget = isTargetCustomer(c);
+  const backHref = crmSafeReturnPath(req.query && req.query.returnTo, "/customers");
   const targetPanel = isTarget ? `
         <div class="card glass">
           <div class="muted" style="font-size:11px">TARGET PIPELINE</div>
@@ -1983,7 +2002,7 @@ fastify.get("/customers/:id", async (req, reply) => {
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-          <a class="btn secondary" href="/customers">Back</a>
+          <a class="btn secondary" href="${esc(backHref)}">Back</a>
 
           <div style="display:flex;gap:10px;margin-top:6px">
             <div style="text-align:right">
