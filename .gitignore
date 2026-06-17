@@ -1,0 +1,44 @@
+# Secrets and local environment
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Runtime databases and SQLite sidecar files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+
+# Dependencies
+node_modules/
+
+# Logs and runtime/temp files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Backups, snapshots, generated restore files
+*.bak
+*.bak*
+*.backup
+*.backup*
+*.LKG.*
+*.bad.*
+*.before-restore.*
+*.upload.js
+
+# One-off migration/debug scripts kept on server but not part of the app source
+gemini_debug.js
+import_from_town_*.js
+patch-stage-*.js
+patch-stage-*.sh
